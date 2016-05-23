@@ -22,10 +22,7 @@ namespace Composer.Editor
 
         public void Rebuild()
         {
-            this.viewManager.RebuildTracks();
-            this.viewManager.RefreshTracks();
-            this.viewManager.RebuildElements();
-            this.viewManager.RefreshElements();
+            this.viewManager.Rebuild();
         }
 
 

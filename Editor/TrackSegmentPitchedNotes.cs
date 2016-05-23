@@ -13,7 +13,7 @@ namespace Composer.Editor
 
         public TrackSegmentPitchedNotes(
             ViewManager manager,
-            ViewManager.Row row,
+            Row row,
             List<Project.TrackPitchedNotes> projectTracks)
             : base(manager, row)
         {
@@ -55,10 +55,7 @@ namespace Composer.Editor
 
         public override float GetTimeAtPosition(float x, float y)
         {
-            return 
-                System.Math.Max(this.row.timeRange.Start,
-                System.Math.Min(this.row.timeRange.End,
-                this.row.timeRange.Start + (x - this.notesRect.xMin) / this.manager.TimeToPixelsMultiplier));
+            return this.row.timeRange.Start + (x - this.notesRect.xMin) / this.manager.TimeToPixelsMultiplier;
         }
 
 
@@ -73,16 +70,26 @@ namespace Composer.Editor
 
         public override void Draw(Graphics g)
         {
+            var endTime = System.Math.Max(
+                this.row.timeRange.End,
+                this.row.resizeEndTime - this.row.timeRange.Start);
+
+            var endX = (int)(this.layoutRect.xMin + endTime * this.manager.TimeToPixelsMultiplier);
+
             for (var p = 0; p <= this.maxPitch.MidiPitch - this.minPitch.MidiPitch; p++)
             {
                 g.DrawLine(Pens.LightGray,
-                    this.notesRect.xMin, this.notesRect.yMax - (p + 1) * this.manager.PitchedNoteHeight,
-                    this.notesRect.xMax, this.notesRect.yMax - (p + 1) * this.manager.PitchedNoteHeight);
+                    (int)this.notesRect.xMin, (int)(this.notesRect.yMax - (p + 1) * this.manager.PitchedNoteHeight),
+                    endX, (int)(this.notesRect.yMax - (p + 1) * this.manager.PitchedNoteHeight));
             }
 
             g.DrawRectangle(Pens.Black,
-                this.notesRect.xMin, this.notesRect.yMin,
-                this.notesRect.xSize, this.notesRect.ySize);
+                (int)this.notesRect.xMin, (int)this.notesRect.yMin,
+                endX - (int)this.notesRect.xMin, (int)this.notesRect.ySize);
+
+            g.DrawLine(Pens.Black,
+                (int)this.notesRect.xMax - 1, (int)this.notesRect.yMin,
+                (int)this.notesRect.xMax - 1, (int)this.notesRect.yMax);
         }
     }
 }

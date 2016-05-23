@@ -52,5 +52,15 @@
                 xMax + amount,
                 yMax + amount);
         }
+
+
+        public Rect Include(Rect other)
+        {
+            return new Rect(
+                System.Math.Min(this.xMin, other.xMin),
+                System.Math.Min(this.yMin, other.yMin),
+                System.Math.Max(this.xMax, other.xMax),
+                System.Math.Max(this.yMax, other.yMax));
+        }
     }
 }

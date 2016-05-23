@@ -2,22 +2,37 @@
 {
     class InteractableRegion
     {
-        public enum Kind
+        public enum CursorKind
         {
             Select,
             MoveAll,
-            StretchHorizontal
+            MoveHorizontal
         }
 
 
-        public Kind kind;
+        public CursorKind cursorKind;
         public Util.Rect rect;
+        public bool isolated;
+        public System.Action<InteractableRegion> dragStartFunc, dragFunc, dragEndFunc;
 
 
-        public InteractableRegion(Kind kind, Util.Rect boundingBox)
+        public InteractableRegion(CursorKind cursorKind, Util.Rect boundingBox)
         {
-            this.kind = kind;
+            this.cursorKind = cursorKind;
             this.rect = boundingBox;
+            this.isolated = false;
+        }
+
+
+        public void SetIsolated(
+            System.Action<InteractableRegion> dragStartFunc,
+            System.Action<InteractableRegion> dragFunc,
+            System.Action<InteractableRegion> dragEndFunc)
+        {
+            this.isolated = true;
+            this.dragStartFunc = dragStartFunc;
+            this.dragFunc = dragFunc;
+            this.dragEndFunc = dragEndFunc;
         }
     }
 }

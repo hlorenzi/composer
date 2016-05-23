@@ -6,11 +6,11 @@ namespace Composer.Editor
     abstract class TrackSegment
     {
         public ViewManager manager;
-        public ViewManager.Row row;
+        public Row row;
         public Util.Rect layoutRect;
 
 
-        public TrackSegment(ViewManager manager, ViewManager.Row row)
+        public TrackSegment(ViewManager manager, Row row)
         {
             this.manager = manager;
             this.row = row;

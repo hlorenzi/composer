@@ -8,6 +8,7 @@ namespace Composer.Editor
     {
         int assignedTrack = -1;
         Project.PitchedNote projectPitchedNote;
+        Project.TrackPitchedNotes projectTrackPitchedNode;
         List<Segment> segments;
 
         Util.TimeRange timeRangeDragStart;
@@ -16,9 +17,11 @@ namespace Composer.Editor
 
         public ElementPitchedNote(
             ViewManager manager,
+            Project.TrackPitchedNotes projectTrackPitchedNode,
             Project.PitchedNote pitchedNote)
             : base(manager)
         {
+            this.projectTrackPitchedNode = projectTrackPitchedNode;
             this.projectPitchedNote = pitchedNote;
             this.drawingRects = new List<Util.Rect>();
             this.interactableRegions = new List<InteractableRegion>();
@@ -34,7 +37,17 @@ namespace Composer.Editor
 
         public override void AssignTrack()
         {
-            this.assignedTrack = 0;
+            this.assignedTrack = -1;
+            for (var i = 0; i < this.manager.rows[0].trackSegments.Count; i++)
+            {
+                var trackPitchedNote = (this.manager.rows[0].trackSegments[i] as TrackSegmentPitchedNotes);
+                if (trackPitchedNote != null &&
+                    trackPitchedNote.projectTracks.Contains(this.projectTrackPitchedNode))
+                {
+                    this.assignedTrack = i;
+                    break;
+                }
+            }
         }
 
 
@@ -77,7 +90,7 @@ namespace Composer.Editor
                 this.drawingRects.Add(noteRect.Expand(2));
 
                 this.interactableRegions.Add(
-                    new InteractableRegion(InteractableRegion.Kind.MoveAll, noteRect));
+                    new InteractableRegion(InteractableRegion.CursorKind.MoveAll, noteRect));
             }
         }
 

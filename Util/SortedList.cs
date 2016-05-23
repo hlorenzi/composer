@@ -4,39 +4,23 @@
 namespace Composer.Util
 {
     // FIXME: Unoptimized trivial implementation.
-    public class TimeRangeSortedList<T> : IList<T>
+    public class SortedList<T> : IList<T>
     {
         List<T> internalList;
-        System.Func<T, TimeRange> getTimeRangeFunc;
+        System.Func<T, T, int> comparerFunc;
 
 
-        public TimeRangeSortedList(System.Func<T, TimeRange> getTimeRangeFunc)
+        public SortedList(System.Func<T, T, int> comparerFunc)
         {
             this.internalList = new List<T>();
-            this.getTimeRangeFunc = getTimeRangeFunc;
-        }
-
-
-        public IEnumerable<T> EnumerateInsideRange(Util.TimeRange timeRange)
-        {
-            foreach (var item in this.internalList)
-            {
-                if (this.getTimeRangeFunc(item).Overlaps(timeRange))
-                    yield return item;
-            }
+            this.comparerFunc = comparerFunc;
         }
 
 
         public void Insert(int index, T item)
         {
             this.internalList.Insert(index, item);
-            this.internalList.Sort((a, b) =>
-            {
-                var order = this.getTimeRangeFunc(a).Start - getTimeRangeFunc(b).Start;
-                if (order < 0) return -1;
-                if (order > 0) return 1;
-                return 0;
-            });
+            this.internalList.Sort((a, b) => this.comparerFunc(a, b));
         }
 
 
@@ -62,13 +46,7 @@ namespace Composer.Util
         public void Add(T item)
         {
             this.internalList.Add(item);
-            this.internalList.Sort((a, b) =>
-            {
-                var order = this.getTimeRangeFunc(a).Start - getTimeRangeFunc(b).Start;
-                if (order < 0) return -1;
-                if (order > 0) return 1;
-                return 0;
-            });
+            this.internalList.Sort((a, b) => this.comparerFunc(a, b));
         }
 
 

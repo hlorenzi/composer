@@ -7,7 +7,7 @@ namespace Composer.Editor
     class ViewManager
     {
         ControlEditor control;
-        Project.Project project;
+        public Project.Project project;
         public List<Row> rows;
         public List<Element> elements;
 
@@ -17,8 +17,9 @@ namespace Composer.Editor
         float timeDragOrigin;
         Util.Pitch pitchDragOrigin;
 
-        Element currentHoverElement;
-        InteractableRegion currentHoverRegion;
+        public Element currentHoverElement;
+        public InteractableRegion currentHoverRegion;
+        public InteractableRegion currentDraggingIsolatedRegion;
 
 
         public ViewManager(ControlEditor control, Project.Project project)
@@ -30,51 +31,40 @@ namespace Composer.Editor
         }
 
 
-        public class Row
-        {
-            public Util.TimeRange timeRange;
-            public List<TrackSegment> trackSegments = new List<TrackSegment>();
-        }
-
-
-        public void RebuildTracks()
+        public void Rebuild()
         {
             this.rows.Clear();
+            this.elements.Clear();
 
-            var tracks = new List<Project.TrackPitchedNotes>();
+            var projectPitchedNoteTracks = new List<Project.TrackPitchedNotes>();
             foreach (var track in this.project.tracks)
             {
                 if (track is Project.TrackPitchedNotes)
-                    tracks.Add((Project.TrackPitchedNotes)track);
+                    projectPitchedNoteTracks.Add((Project.TrackPitchedNotes)track);
             }
-            
-            for (var i = 0; i < 3; i++)
-            {
-                var row = new Row();
-                row.timeRange = new Util.TimeRange(i * this.project.TimeInWholeNote * 4, (i + 1) * this.project.TimeInWholeNote * 4);
-                row.trackSegments.Add(new TrackSegmentPitchedNotes(this, row, tracks));
-                this.rows.Add(row);
-            }
-        }
 
-
-        public void RefreshTracks()
-        {
-            var y = TopMargin;
-            foreach (var row in this.rows)
+            var currentTime = 0f;
+            var currentSegment = 0;
+            while (currentSegment <= this.project.segmentBreaks.Count)
             {
-                foreach (var track in row.trackSegments)
+                var endTime = this.project.Length;
+                if (currentSegment < this.project.segmentBreaks.Count)
+                    endTime = this.project.segmentBreaks[currentSegment].time;
+
+                var row = new Row(this, new Util.TimeRange(currentTime, endTime));
+
+                foreach (var track in this.project.tracks)
                 {
-                    track.Rebuild(LeftMargin, y);
-                    y = track.layoutRect.yMax;
+                    if (track is Project.TrackPitchedNotes)
+                        row.trackSegments.Add(new TrackSegmentPitchedNotes(
+                            this, row,
+                            new List<Project.TrackPitchedNotes> { (Project.TrackPitchedNotes)track }));
                 }
+
+                this.rows.Add(row);
+                currentTime = endTime;
+                currentSegment++;
             }
-        }
-
-
-        public void RebuildElements()
-        {
-            this.elements.Clear();
 
             var tracks = new List<Project.TrackPitchedNotes>();
             foreach (var track in this.project.tracks)
@@ -83,13 +73,27 @@ namespace Composer.Editor
                 if (trackPitchedNotes != null)
                 {
                     foreach (var note in trackPitchedNotes.notes)
-                        this.elements.Add(new ElementPitchedNote(this, note));
+                        this.elements.Add(new ElementPitchedNote(this, trackPitchedNotes, note));
                 }
             }
 
             foreach (var element in this.elements)
             {
                 element.AssignTrack();
+            }
+
+            RefreshTracks();
+            RefreshElements();
+        }
+
+
+        public void RefreshTracks()
+        {
+            var y = TopMargin;
+            foreach (var row in this.rows)
+            {
+                row.Rebuild(LeftMargin, y);
+                y = row.layoutRect.yMax;
             }
         }
 
@@ -117,12 +121,17 @@ namespace Composer.Editor
 
             if (this.mouseIsDown)
             {
-                foreach (var element in this.elements)
+                if (this.currentHoverRegion != null && this.currentHoverRegion.isolated)
+                    this.currentHoverRegion.dragFunc(this.currentHoverRegion);
+                else
                 {
-                    if (element.selected)
+                    foreach (var element in this.elements)
                     {
-                        element.Drag();
-                        element.Rebuild();
+                        if (element.selected)
+                        {
+                            element.Drag();
+                            element.Rebuild();
+                        }
                     }
                 }
 
@@ -147,12 +156,31 @@ namespace Composer.Editor
                     }
                 }
 
+                foreach (var row in this.rows)
+                {
+                    foreach (var region in row.interactableRegions)
+                    {
+                        if (region.rect.Contains(x, y))
+                        {
+                            this.currentHoverElement = null;
+                            this.currentHoverRegion = region;
+                        }
+                    }
+                }
+
                 if (this.currentHoverRegion != null)
                 {
-                    if (this.currentHoverRegion.kind == InteractableRegion.Kind.MoveAll)
-                        this.control.Cursor = System.Windows.Forms.Cursors.Hand;
-                    else
-                        this.control.Cursor = System.Windows.Forms.Cursors.Default;
+                    switch (this.currentHoverRegion.cursorKind)
+                    {
+                        case InteractableRegion.CursorKind.Select:
+                            this.control.Cursor = System.Windows.Forms.Cursors.Hand; break;
+                        case InteractableRegion.CursorKind.MoveAll:
+                            this.control.Cursor = System.Windows.Forms.Cursors.SizeAll; break;
+                        case InteractableRegion.CursorKind.MoveHorizontal:
+                            this.control.Cursor = System.Windows.Forms.Cursors.SizeWE; break;
+                        default:
+                            this.control.Cursor = System.Windows.Forms.Cursors.Default; break;
+                    }
                 }
                 else
                     this.control.Cursor = System.Windows.Forms.Cursors.Default;
@@ -169,7 +197,8 @@ namespace Composer.Editor
             this.mouseDragOriginX = x;
             this.mouseDragOriginY = y;
 
-            if (!ctrlKey && (this.currentHoverElement == null || !this.currentHoverElement.selected))
+            if ((!ctrlKey && (this.currentHoverElement == null || !this.currentHoverElement.selected)) ||
+                this.currentHoverRegion != null && this.currentHoverRegion.isolated)
                 UnselectAll();
 
             if (this.currentHoverElement != null)
@@ -179,10 +208,18 @@ namespace Composer.Editor
             this.timeDragOrigin = trackSegment.GetTimeAtPosition(x, y);
             this.pitchDragOrigin = trackSegment.GetPitchAtPosition(x, y);
 
-            foreach (var element in this.elements)
+            if (this.currentHoverRegion != null && this.currentHoverRegion.isolated)
             {
-                if (element.selected)
-                    element.DragStart();
+                this.currentDraggingIsolatedRegion = this.currentHoverRegion;
+                this.currentDraggingIsolatedRegion.dragStartFunc(this.currentDraggingIsolatedRegion);
+            }
+            else
+            {
+                foreach (var element in this.elements)
+                {
+                    if (element.selected)
+                        element.DragStart();
+                }
             }
 
             this.control.Refresh();
@@ -191,6 +228,20 @@ namespace Composer.Editor
 
         public void OnMouseUp(float x, float y)
         {
+            if (this.currentDraggingIsolatedRegion != null)
+            {
+                this.currentDraggingIsolatedRegion.dragEndFunc(this.currentDraggingIsolatedRegion);
+                this.currentDraggingIsolatedRegion = null;
+            }
+            else
+            {
+                foreach (var element in this.elements)
+                {
+                    if (element.selected)
+                        element.DragEnd();
+                }
+            }
+
             this.mouseIsDown = false;
             this.RefreshTracks();
             this.RefreshElements();
@@ -201,13 +252,13 @@ namespace Composer.Editor
         public void Draw(Graphics g)
         {
             foreach (var row in this.rows)
-            {
-                foreach (var track in row.trackSegments)
-                    track.Draw(g);
-            }
+                row.Draw(g);
 
             foreach (var element in this.elements)
                 element.Draw(g, currentHoverElement == element, element.selected);
+
+            foreach (var row in this.rows)
+                row.DrawOverlay(g);
         }
 
 
@@ -242,19 +293,19 @@ namespace Composer.Editor
 
         public float LeftMargin
         {
-            get { return 10; }
+            get { return 20; }
         }
 
 
         public float RightMargin
         {
-            get { return 10; }
+            get { return 20; }
         }
 
 
         public float TopMargin
         {
-            get { return 10; }
+            get { return 20; }
         }
 
 
@@ -280,9 +331,24 @@ namespace Composer.Editor
         {
             get
             {
-                var timeAtMouse =
-                    this.GetTrackSegmentAtPosition(this.mouseCurrentX, this.mouseCurrentY)
-                    .GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY);
+                var trackAtMouse = this.GetTrackSegmentAtPosition(this.mouseCurrentX, this.mouseCurrentY);
+                var timeAtMouse = trackAtMouse.GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY);
+                var timeAtMouseClipped = 
+                    System.Math.Max(trackAtMouse.row.timeRange.Start,
+                    System.Math.Min(trackAtMouse.row.timeRange.End, timeAtMouse));
+
+                var offset = timeAtMouseClipped - this.timeDragOrigin;
+                return (float)(System.Math.Round(offset / TimeSnap) * TimeSnap);
+            }
+        }
+
+
+        public float DragTimeOverflowOffset
+        {
+            get
+            {
+                var trackAtMouse = this.GetTrackSegmentAtPosition(this.mouseCurrentX, this.mouseCurrentY);
+                var timeAtMouse = trackAtMouse.GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY);
 
                 var offset = timeAtMouse - this.timeDragOrigin;
                 return (float)(System.Math.Round(offset / TimeSnap) * TimeSnap);

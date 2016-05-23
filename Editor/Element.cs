@@ -43,6 +43,12 @@ namespace Composer.Editor
         }
 
 
+        public virtual void DragEnd()
+        {
+
+        }
+
+
         public virtual void Draw(Graphics g, bool hovering, bool selected)
         {
 
