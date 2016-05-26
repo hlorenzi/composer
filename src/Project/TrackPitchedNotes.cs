@@ -38,12 +38,12 @@ namespace Composer.Project
 
             foreach (var note in this.notes.EnumerateOverlapping(splitTime))
             {
-                note.timeRange.End = splitTime;
                 newNotes.Add(new PitchedNote
                 {
                     pitch = note.pitch,
                     timeRange = Util.TimeRange.StartEnd(splitTime, note.timeRange.End)
                 });
+                note.timeRange.End = splitTime;
             }
 
             this.notes.Sort();
