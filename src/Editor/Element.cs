@@ -7,7 +7,6 @@ namespace Composer.Editor
     abstract class Element
     {
         public ViewManager manager;
-        public List<Util.Rect> drawingRects;
         public List<InteractableRegion> interactableRegions;
 
         public bool selected;

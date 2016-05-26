@@ -8,12 +8,14 @@ namespace Composer.Editor
     {
         ViewManager manager;
         public Util.TimeRange timeRange;
-        public float resizeEndTime;
-        public List<TrackSegment> trackSegments;
         public Util.Rect layoutRect;
         public List<InteractableRegion> interactableRegions;
 
+        public TrackSegmentMeterChanges trackSegmentMeterChanges;
+        public List<TrackSegment> trackSegments;
+
         public bool isLastRow;
+        public float resizeEndTime;
 
         InteractableRegion regionSectionHandle;
         InteractableRegion regionAddSectionBeforeButton;
@@ -174,8 +176,8 @@ namespace Composer.Editor
                 (this.resizeEndTime - this.timeRange.Start) * this.manager.TimeToPixelsMultiplier);
 
             using (var pen = new Pen(
-                segmentHandleSelected ? Color.Aquamarine :
-                segmentHandleHovering ? Color.MediumAquamarine : Color.Black,
+                segmentHandleSelected ? Color.Gray :
+                segmentHandleHovering ? Color.DarkGray : Color.Black,
                 3))
             {
                 g.DrawLine(pen,
@@ -183,8 +185,8 @@ namespace Composer.Editor
                     endX, (int)this.layoutRect.yMax);
 
                 g.FillRectangle(
-                    segmentHandleSelected ? Brushes.Aquamarine :
-                    segmentHandleHovering ? Brushes.MediumAquamarine : Brushes.Black,
+                    segmentHandleSelected ? Brushes.Gray :
+                    segmentHandleHovering ? Brushes.DarkGray : Brushes.Black,
                     endX - 5, (int)this.layoutRect.yMin + ADD_SECTION_BUTTON_SIZE + ADD_SECTION_BUTTON_MARGIN * 2,
                     11, 11);
             }

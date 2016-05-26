@@ -24,6 +24,10 @@ namespace Composer
             noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(3), timeRange = new Util.TimeRange(project.WholeNoteDuration / 4 * 3, project.WholeNoteDuration / 4 * 4) });
             noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(3), timeRange = new Util.TimeRange(project.WholeNoteDuration / 4 * 4, project.WholeNoteDuration * 9) });
 
+            project.InsertMeterChange(new Project.MeterChange(0, new Util.Meter(4, 4)));
+            project.InsertMeterChange(new Project.MeterChange(960, new Util.Meter(3, 4)));
+            project.InsertMeterChange(new Project.MeterChange(960 * 2, new Util.Meter(6, 8)));
+
             Application.Run(new FormMain(project));
         }
     }

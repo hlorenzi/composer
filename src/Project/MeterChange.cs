@@ -3,13 +3,19 @@
     public class MeterChange
     {
         public float time;
-        public Util.Meter newMeter;
+        public Util.Meter meter;
 
 
         public MeterChange(float time, Util.Meter newMeter)
         {
             this.time = time;
-            this.newMeter = newMeter;
+            this.meter = newMeter;
+        }
+
+
+        public string GetDisplayString()
+        {
+            return this.meter.numerator + " / " + this.meter.denominator;
         }
     }
 }

@@ -50,7 +50,9 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Editor\Element.cs" />
+    <Compile Include="Editor\ElementMeterChange.cs" />
     <Compile Include="Editor\Row.cs" />
+    <Compile Include="Editor\TrackSegmentMeterChanges.cs" />
     <Compile Include="Editor\ViewManager.cs" />
     <Compile Include="Editor\ElementPitchedNote.cs" />
     <Compile Include="Editor\InteractableRegion.cs" />
@@ -70,9 +72,9 @@
     <Compile Include="Util\Meter.cs" />
     <Compile Include="Util\Rect.cs" />
     <Compile Include="Util\Pitch.cs" />
-    <Compile Include="Util\SortedList.cs" />
     <Compile Include="Util\TimeRange.cs" />
     <Compile Include="Util\TimeRangeSortedList.cs" />
+    <Compile Include="Util\TimeSortedList.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

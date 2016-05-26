@@ -7,16 +7,16 @@ namespace Composer.Project
     public class Project
     {
         float length;
-        public Util.SortedList<SectionBreak> sectionBreaks;
-        public Util.SortedList<MeterChange> meterChanges;
+        public Util.TimeSortedList<SectionBreak> sectionBreaks;
+        public Util.TimeSortedList<MeterChange> meterChanges;
         public List<Track> tracks;
 
 
         public Project()
         {
             this.length = this.WholeNoteDuration * 4;
-            this.sectionBreaks = new Util.SortedList<SectionBreak>((a, b) => a.time.CompareTo(b.time));
-            this.meterChanges = new Util.SortedList<MeterChange>((a, b) => a.time.CompareTo(b.time));
+            this.sectionBreaks = new Util.TimeSortedList<SectionBreak>(sb => sb.time);
+            this.meterChanges = new Util.TimeSortedList<MeterChange>(mc => mc.time);
             this.tracks = new List<Track>();
 
             this.InsertMeterChange(new MeterChange(0, new Util.Meter(4, 4)));
@@ -47,7 +47,7 @@ namespace Composer.Project
 
         public void InsertMeterChange(MeterChange newMeterChange)
         {
-            if (newMeterChange.time <= 0 || newMeterChange.time >= this.length)
+            if (newMeterChange.time < 0 || newMeterChange.time >= this.length)
                 return;
 
             this.meterChanges.RemoveAll(mc => mc.time == newMeterChange.time);

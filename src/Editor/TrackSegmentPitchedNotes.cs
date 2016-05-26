@@ -70,18 +70,53 @@ namespace Composer.Editor
 
         public override void Draw(Graphics g)
         {
-            var endTime = System.Math.Max(
-                this.row.timeRange.End, this.row.resizeEndTime) - this.row.timeRange.Start;
+            var rowEndTime = System.Math.Max(this.row.timeRange.End, this.row.resizeEndTime);
+            var rowDuration = rowEndTime - this.row.timeRange.Start;
+            var endX = (int)(this.layoutRect.xMin + rowDuration * this.manager.TimeToPixelsMultiplier);
 
-            var endX = (int)(this.layoutRect.xMin + endTime * this.manager.TimeToPixelsMultiplier);
-
+            // Draw pitch separators.
             for (var p = 0; p <= this.maxPitch.MidiPitch - this.minPitch.MidiPitch; p++)
             {
                 g.DrawLine(Pens.LightGray,
-                    (int)this.notesRect.xMin, (int)(this.notesRect.yMax - (p + 1) * this.manager.PitchedNoteHeight),
-                    endX, (int)(this.notesRect.yMax - (p + 1) * this.manager.PitchedNoteHeight));
+                    (int)this.notesRect.xMin,
+                    (int)(this.notesRect.yMax - (p + 1) * this.manager.PitchedNoteHeight),
+                    endX,
+                    (int)(this.notesRect.yMax - (p + 1) * this.manager.PitchedNoteHeight));
             }
 
+            // Draw beat separators.
+            for (var i = 0; i < this.row.trackSegmentMeterChanges.meterChanges.Count; i++)
+            {
+                var meterChange = this.row.trackSegmentMeterChanges.meterChanges[i];
+                if (meterChange == null)
+                    continue;
+
+                var meterEndTime = rowEndTime;
+                if (i + 1 < this.row.trackSegmentMeterChanges.meterChanges.Count)
+                    meterEndTime = this.row.trackSegmentMeterChanges.meterChanges[i + 1].time;
+
+                var beatCount = 0;
+                var beatDuration = this.manager.project.WholeNoteDuration / meterChange.meter.denominator;
+
+                for (var n = meterChange.time; n < meterEndTime; n += beatDuration)
+                {
+                    if (n > this.row.timeRange.Start)
+                    {
+                        var nMinusRowStart = n - this.row.timeRange.Start;
+                        var x = (int)this.notesRect.xMin + nMinusRowStart * this.manager.TimeToPixelsMultiplier;
+
+                        g.DrawLine(beatCount == 0 ? Pens.Gray : Pens.LightGray,
+                            x,
+                            (int)(this.notesRect.yMin),
+                            x,
+                            (int)(this.notesRect.yMax));
+                    }
+
+                    beatCount = (beatCount + 1) % meterChange.meter.numerator;
+                }
+            }
+
+            // Draw frame.
             g.DrawRectangle(Pens.Black,
                 (int)this.notesRect.xMin, (int)this.notesRect.yMin,
                 endX - (int)this.notesRect.xMin, (int)this.notesRect.ySize);

@@ -57,6 +57,9 @@ namespace Composer.Editor
 
                 var row = new Row(this, new Util.TimeRange(currentTime, endTime), isLastRow);
 
+                row.trackSegmentMeterChanges = new TrackSegmentMeterChanges(this, row);
+                row.trackSegments.Add(row.trackSegmentMeterChanges);
+
                 foreach (var track in this.project.tracks)
                 {
                     if (track is Project.TrackPitchedNotes)
@@ -70,7 +73,9 @@ namespace Composer.Editor
                 currentSegment++;
             }
 
-            var tracks = new List<Project.TrackPitchedNotes>();
+            foreach (var meterChange in this.project.meterChanges)
+                this.elements.Add(new ElementMeterChange(this, meterChange));
+
             foreach (var track in this.project.tracks)
             {
                 var trackPitchedNotes = (track as Project.TrackPitchedNotes);
@@ -268,6 +273,18 @@ namespace Composer.Editor
 
             foreach (var row in this.rows)
                 row.DrawOverlay(g);
+        }
+
+
+        public Row GetRowOverlapping(float time)
+        {
+            foreach (var row in this.rows)
+            {
+                if (row.timeRange.Overlaps(time))
+                    return row;
+            }
+
+            return null;
         }
 
 

@@ -23,7 +23,6 @@ namespace Composer.Editor
         {
             this.projectTrackPitchedNode = projectTrackPitchedNode;
             this.projectPitchedNote = pitchedNote;
-            this.drawingRects = new List<Util.Rect>();
             this.interactableRegions = new List<InteractableRegion>();
             this.segments = new List<Segment>();
         }
@@ -54,7 +53,6 @@ namespace Composer.Editor
         public override void Rebuild()
         {
             this.segments.Clear();
-            this.drawingRects.Clear();
             this.interactableRegions.Clear();
 
             var tMult = this.manager.TimeToPixelsMultiplier;
@@ -86,8 +84,6 @@ namespace Composer.Editor
                     trackPitchedNote.notesRect.yMax - pMult * midiPitchMinusTrackMin);
 
                 this.segments.Add(new Segment { noteRect = noteRect });
-
-                this.drawingRects.Add(noteRect.Expand(2));
 
                 this.interactableRegions.Add(
                     new InteractableRegion(InteractableRegion.CursorKind.MoveAll, noteRect));
