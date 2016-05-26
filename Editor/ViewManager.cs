@@ -45,13 +45,17 @@ namespace Composer.Editor
 
             var currentTime = 0f;
             var currentSegment = 0;
-            while (currentSegment <= this.project.segmentBreaks.Count)
+            while (currentSegment <= this.project.sectionBreaks.Count)
             {
                 var endTime = this.project.Length;
-                if (currentSegment < this.project.segmentBreaks.Count)
-                    endTime = this.project.segmentBreaks[currentSegment].time;
+                var isLastRow = true;
+                if (currentSegment < this.project.sectionBreaks.Count)
+                {
+                    endTime = this.project.sectionBreaks[currentSegment].time;
+                    isLastRow = false;
+                }
 
-                var row = new Row(this, new Util.TimeRange(currentTime, endTime));
+                var row = new Row(this, new Util.TimeRange(currentTime, endTime), isLastRow);
 
                 foreach (var track in this.project.tracks)
                 {
@@ -122,7 +126,7 @@ namespace Composer.Editor
             if (this.mouseIsDown)
             {
                 if (this.currentHoverRegion != null && this.currentHoverRegion.isolated)
-                    this.currentHoverRegion.dragFunc(this.currentHoverRegion);
+                    this.currentHoverRegion.dragFunc?.Invoke(this.currentHoverRegion);
                 else
                 {
                     foreach (var element in this.elements)
@@ -204,14 +208,13 @@ namespace Composer.Editor
             if (this.currentHoverElement != null)
                 this.currentHoverElement.selected = true;
 
-            var trackSegment = this.GetTrackSegmentAtPosition(x, y);
-            this.timeDragOrigin = trackSegment.GetTimeAtPosition(x, y);
-            this.pitchDragOrigin = trackSegment.GetPitchAtPosition(x, y);
+            this.timeDragOrigin = this.GetTimeAtPosition(x, y, true);
+            this.pitchDragOrigin = this.GetTrackSegmentAtPosition(x, y).GetPitchAtPosition(y);
 
             if (this.currentHoverRegion != null && this.currentHoverRegion.isolated)
             {
                 this.currentDraggingIsolatedRegion = this.currentHoverRegion;
-                this.currentDraggingIsolatedRegion.dragStartFunc(this.currentDraggingIsolatedRegion);
+                this.currentDraggingIsolatedRegion.dragStartFunc?.Invoke(this.currentDraggingIsolatedRegion);
             }
             else
             {
@@ -228,9 +231,15 @@ namespace Composer.Editor
 
         public void OnMouseUp(float x, float y)
         {
+            this.mouseIsDown = false;
+
             if (this.currentDraggingIsolatedRegion != null)
             {
-                this.currentDraggingIsolatedRegion.dragEndFunc(this.currentDraggingIsolatedRegion);
+                this.currentDraggingIsolatedRegion.dragEndFunc?.Invoke(this.currentDraggingIsolatedRegion);
+
+                if (this.currentHoverRegion == this.currentDraggingIsolatedRegion)
+                    this.currentDraggingIsolatedRegion.clickFunc?.Invoke(this.currentDraggingIsolatedRegion);
+
                 this.currentDraggingIsolatedRegion = null;
             }
             else
@@ -240,11 +249,11 @@ namespace Composer.Editor
                     if (element.selected)
                         element.DragEnd();
                 }
+
+                this.RefreshTracks();
+                this.RefreshElements();
             }
 
-            this.mouseIsDown = false;
-            this.RefreshTracks();
-            this.RefreshElements();
             this.control.Refresh();
         }
 
@@ -266,7 +275,7 @@ namespace Composer.Editor
         {
             foreach (var row in this.rows)
             {
-                if (row.timeRange.Overlaps(timeRange))
+                if (row.timeRange.OverlapsRange(timeRange))
                     yield return row;
             }
         }
@@ -288,6 +297,45 @@ namespace Composer.Editor
 
             var lastRow = this.rows[this.rows.Count - 1];
             return lastRow.trackSegments[lastRow.trackSegments.Count - 1];
+        }
+
+
+        public float GetTimeAtPosition(float x, float y, bool clampToRowRange)
+        {
+            var time = 0f;
+            var timeClampMin = 0f;
+            var timeClampMax = 0f;
+
+            if (this.rows.Count > 0)
+            {
+                if (y <= this.rows[0].layoutRect.yMin)
+                {
+                    time = this.rows[0].GetTimeAtPosition(x);
+                    timeClampMin = this.rows[0].timeRange.Start;
+                    timeClampMax = this.rows[0].timeRange.End;
+                }
+                else
+                {
+                    var lastRow = this.rows[this.rows.Count - 1];
+                    time = lastRow.GetTimeAtPosition(x);
+                    timeClampMin = lastRow.timeRange.Start;
+                    timeClampMax = lastRow.timeRange.End;
+                }
+            }
+
+            foreach (var row in this.rows)
+            {
+                if (row.layoutRect.ContainsY(y))
+                {
+                    time = row.GetTimeAtPosition(x);
+                    timeClampMin = row.timeRange.Start;
+                    timeClampMax = row.timeRange.End;
+                    break;
+                }
+            }
+
+            var timeClamped = System.Math.Max(timeClampMin, System.Math.Min(timeClampMax, time));
+            return (clampToRowRange ? timeClamped : time);
         }
 
 
@@ -317,13 +365,45 @@ namespace Composer.Editor
 
         public float TimeToPixelsMultiplier
         {
-            get { return 100f / this.project.TimeInWholeNote; }
+            get { return 100f / this.project.WholeNoteDuration; }
         }
 
 
         public float TimeSnap
         {
-            get { return this.project.TimeInWholeNote / 16; }
+            get { return this.project.WholeNoteDuration / 16; }
+        }
+
+
+        public float MouseTime
+        {
+            get
+            {
+                var time = this.GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY, false);
+                return (float)(System.Math.Round(time / TimeSnap) * TimeSnap);
+            }
+        }
+
+
+        public float MouseTimeClampedToRow
+        {
+            get
+            {
+                var time = this.GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY, true);
+                return (float)(System.Math.Round(time / TimeSnap) * TimeSnap);
+            }
+        }
+
+
+        public float DragTimeOffsetIrrespectiveOfRow
+        {
+            get
+            {
+                var offset =
+                    (this.mouseCurrentX - this.mouseDragOriginX) / this.TimeToPixelsMultiplier;
+
+                return (float)(System.Math.Round(offset / TimeSnap) * TimeSnap);
+            }
         }
 
 
@@ -331,26 +411,23 @@ namespace Composer.Editor
         {
             get
             {
-                var trackAtMouse = this.GetTrackSegmentAtPosition(this.mouseCurrentX, this.mouseCurrentY);
-                var timeAtMouse = trackAtMouse.GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY);
-                var timeAtMouseClipped = 
-                    System.Math.Max(trackAtMouse.row.timeRange.Start,
-                    System.Math.Min(trackAtMouse.row.timeRange.End, timeAtMouse));
+                var offset =
+                    this.GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY, false) -
+                    this.timeDragOrigin;
 
-                var offset = timeAtMouseClipped - this.timeDragOrigin;
                 return (float)(System.Math.Round(offset / TimeSnap) * TimeSnap);
             }
         }
 
 
-        public float DragTimeOverflowOffset
+        public float DragTimeOffsetClampedToRow
         {
             get
             {
-                var trackAtMouse = this.GetTrackSegmentAtPosition(this.mouseCurrentX, this.mouseCurrentY);
-                var timeAtMouse = trackAtMouse.GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY);
+                var offset =
+                    this.GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY, true) -
+                    this.timeDragOrigin;
 
-                var offset = timeAtMouse - this.timeDragOrigin;
                 return (float)(System.Math.Round(offset / TimeSnap) * TimeSnap);
             }
         }
@@ -362,7 +439,7 @@ namespace Composer.Editor
             {
                 var pitchAtMouse =
                     this.GetTrackSegmentAtPosition(this.mouseCurrentX, this.mouseCurrentY)
-                    .GetPitchAtPosition(this.mouseCurrentX, this.mouseCurrentY);
+                    .GetPitchAtPosition(this.mouseCurrentY);
 
                 var offset = pitchAtMouse.MidiPitch - this.pitchDragOrigin.MidiPitch;
                 return (float)System.Math.Round(offset);

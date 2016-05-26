@@ -29,7 +29,7 @@ namespace Composer.Editor
             // Find minimum and maximum note pitches in the segment's time range.
             foreach (var track in this.projectTracks)
             {
-                foreach (var note in track.notes.EnumerateInsideRange(this.row.timeRange))
+                foreach (var note in track.notes.EnumerateOverlappingRange(this.row.timeRange))
                 {
                     if (note.pitch.MidiPitch < this.minPitch.MidiPitch)
                         this.minPitch = note.pitch;
@@ -53,13 +53,13 @@ namespace Composer.Editor
         }
 
 
-        public override float GetTimeAtPosition(float x, float y)
+        public override float GetTimeAtPosition(float x)
         {
             return this.row.timeRange.Start + (x - this.notesRect.xMin) / this.manager.TimeToPixelsMultiplier;
         }
 
 
-        public override Util.Pitch GetPitchAtPosition(float x, float y)
+        public override Util.Pitch GetPitchAtPosition(float y)
         {
             return Util.Pitch.FromMidiPitch(
                 System.Math.Max(this.minPitch.MidiPitch,
@@ -71,8 +71,7 @@ namespace Composer.Editor
         public override void Draw(Graphics g)
         {
             var endTime = System.Math.Max(
-                this.row.timeRange.End,
-                this.row.resizeEndTime - this.row.timeRange.Start);
+                this.row.timeRange.End, this.row.resizeEndTime) - this.row.timeRange.Start;
 
             var endX = (int)(this.layoutRect.xMin + endTime * this.manager.TimeToPixelsMultiplier);
 

@@ -19,9 +19,9 @@ namespace Composer.Editor
 
         public abstract void Rebuild(float x, float y);
 
-        public abstract float GetTimeAtPosition(float x, float y);
+        public abstract float GetTimeAtPosition(float x);
 
-        public abstract Util.Pitch GetPitchAtPosition(float x, float y);
+        public abstract Util.Pitch GetPitchAtPosition(float y);
 
         public abstract void Draw(Graphics g);
     }

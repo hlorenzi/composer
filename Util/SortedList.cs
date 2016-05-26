@@ -17,16 +17,36 @@ namespace Composer.Util
         }
 
 
+        public void Sort()
+        {
+            this.internalList.Sort((a, b) => this.comparerFunc(a, b));
+        }
+
+
+        public SortedList<T> Clone()
+        {
+            var clone = new SortedList<T>(this.comparerFunc);
+            clone.AddRange(this);
+            return clone;
+        }
+
+
         public void Insert(int index, T item)
         {
             this.internalList.Insert(index, item);
-            this.internalList.Sort((a, b) => this.comparerFunc(a, b));
+            this.Sort();
         }
 
 
         public void RemoveAt(int index)
         {
             this.internalList.RemoveAt(index);
+        }
+
+
+        public int RemoveAll(System.Predicate<T> predicate)
+        {
+            return internalList.RemoveAll(predicate);
         }
 
 
@@ -46,7 +66,14 @@ namespace Composer.Util
         public void Add(T item)
         {
             this.internalList.Add(item);
-            this.internalList.Sort((a, b) => this.comparerFunc(a, b));
+            this.Sort();
+        }
+
+
+        public void AddRange(IEnumerable<T> items)
+        {
+            this.internalList.AddRange(items);
+            this.Sort();
         }
 
 

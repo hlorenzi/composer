@@ -105,7 +105,7 @@ namespace Composer.Editor
         public override void Drag()
         {
             this.projectPitchedNote.timeRange =
-                this.timeRangeDragStart.OffsetBy(this.manager.DragTimeOffset);
+                this.timeRangeDragStart.OffsetBy(this.manager.DragTimeOffsetClampedToRow);
 
             this.projectPitchedNote.pitch =
                 this.pitchDragStart.OffsetMidiPitchBy(this.manager.DragMidiPitchOffset);

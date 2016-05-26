@@ -63,7 +63,7 @@
     <Compile Include="Project\MeterChange.cs" />
     <Compile Include="Project\PitchedNote.cs" />
     <Compile Include="Project\Project.cs" />
-    <Compile Include="Project\SegmentBreak.cs" />
+    <Compile Include="Project\SectionBreak.cs" />
     <Compile Include="Project\Track.cs" />
     <Compile Include="Project\TrackPitchedNotes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

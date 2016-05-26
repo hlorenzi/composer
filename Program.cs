@@ -18,11 +18,11 @@ namespace Composer
             project.tracks.Add(track);
 
             var noteList = (IList<Project.PitchedNote>)track.notes;
-            noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(0), timeRange = new Util.TimeRange(0, project.TimeInWholeNote / 4) });
-            noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(1), timeRange = new Util.TimeRange(project.TimeInWholeNote / 4, project.TimeInWholeNote / 4 * 2) });
-            noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(2), timeRange = new Util.TimeRange(project.TimeInWholeNote / 4 * 2, project.TimeInWholeNote / 4 * 3) });
-            noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(3), timeRange = new Util.TimeRange(project.TimeInWholeNote / 4 * 3, project.TimeInWholeNote / 4 * 4) });
-            noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(3), timeRange = new Util.TimeRange(project.TimeInWholeNote / 4 * 4, project.TimeInWholeNote * 9) });
+            noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(0), timeRange = new Util.TimeRange(0, project.WholeNoteDuration / 4) });
+            noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(1), timeRange = new Util.TimeRange(project.WholeNoteDuration / 4, project.WholeNoteDuration / 4 * 2) });
+            noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(2), timeRange = new Util.TimeRange(project.WholeNoteDuration / 4 * 2, project.WholeNoteDuration / 4 * 3) });
+            noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(3), timeRange = new Util.TimeRange(project.WholeNoteDuration / 4 * 3, project.WholeNoteDuration / 4 * 4) });
+            noteList.Add(new Project.PitchedNote { pitch = Util.Pitch.FromMidiPitch(3), timeRange = new Util.TimeRange(project.WholeNoteDuration / 4 * 4, project.WholeNoteDuration * 9) });
 
             Application.Run(new FormMain(project));
         }

@@ -1,11 +1,11 @@
 ﻿namespace Composer.Project
 {
-    public class SegmentBreak
+    public class SectionBreak
     {
         public float time;
 
 
-        public SegmentBreak(float time)
+        public SectionBreak(float time)
         {
             this.time = time;
         }

@@ -17,19 +17,8 @@ namespace Composer.Util
         }
 
 
-        public IEnumerable<T> EnumerateInsideRange(Util.TimeRange timeRange)
+        public void Sort()
         {
-            foreach (var item in this.internalList)
-            {
-                if (this.getTimeRangeFunc(item).Overlaps(timeRange))
-                    yield return item;
-            }
-        }
-
-
-        public void Insert(int index, T item)
-        {
-            this.internalList.Insert(index, item);
             this.internalList.Sort((a, b) =>
             {
                 var order = this.getTimeRangeFunc(a).Start - getTimeRangeFunc(b).Start;
@@ -40,9 +29,68 @@ namespace Composer.Util
         }
 
 
+        public IEnumerable<T> EnumerateOverlapping(float time)
+        {
+            foreach (var item in this.internalList)
+            {
+                if (this.getTimeRangeFunc(item).Overlaps(time))
+                    yield return item;
+            }
+        }
+
+
+        public IEnumerable<T> EnumerateOverlappingRange(Util.TimeRange timeRange)
+        {
+            foreach (var item in this.internalList)
+            {
+                if (this.getTimeRangeFunc(item).OverlapsRange(timeRange))
+                    yield return item;
+            }
+        }
+
+
+        public IEnumerable<T> EnumerateEntirelyBefore(float time)
+        {
+            foreach (var item in this.internalList)
+            {
+                if (this.getTimeRangeFunc(item).End <= time)
+                    yield return item;
+            }
+        }
+
+
+        public IEnumerable<T> EnumerateEntirelyAfter(float time)
+        {
+            foreach (var item in this.internalList)
+            {
+                if (this.getTimeRangeFunc(item).Start >= time)
+                    yield return item;
+            }
+        }
+
+
+        public void Insert(int index, T item)
+        {
+            this.internalList.Insert(index, item);
+            this.Sort();
+        }
+
+
         public void RemoveAt(int index)
         {
             this.internalList.RemoveAt(index);
+        }
+
+
+        public int RemoveAll(System.Predicate<T> predicate)
+        {
+            return internalList.RemoveAll(predicate);
+        }
+
+
+        public void RemoveOverlappingRange(Util.TimeRange timeRange)
+        {
+            internalList.RemoveAll(item => this.getTimeRangeFunc(item).OverlapsRange(timeRange));
         }
 
 
@@ -62,13 +110,14 @@ namespace Composer.Util
         public void Add(T item)
         {
             this.internalList.Add(item);
-            this.internalList.Sort((a, b) =>
-            {
-                var order = this.getTimeRangeFunc(a).Start - getTimeRangeFunc(b).Start;
-                if (order < 0) return -1;
-                if (order > 0) return 1;
-                return 0;
-            });
+            this.Sort();
+        }
+
+
+        public void AddRange(IEnumerable<T> items)
+        {
+            this.internalList.AddRange(items);
+            this.Sort();
         }
 
 

@@ -13,7 +13,7 @@
         public CursorKind cursorKind;
         public Util.Rect rect;
         public bool isolated;
-        public System.Action<InteractableRegion> dragStartFunc, dragFunc, dragEndFunc;
+        public System.Action<InteractableRegion> dragStartFunc, dragFunc, dragEndFunc, clickFunc;
 
 
         public InteractableRegion(CursorKind cursorKind, Util.Rect boundingBox)
@@ -33,6 +33,14 @@
             this.dragStartFunc = dragStartFunc;
             this.dragFunc = dragFunc;
             this.dragEndFunc = dragEndFunc;
+        }
+
+
+        public void SetButton(
+            System.Action<InteractableRegion> clickFunc)
+        {
+            this.isolated = true;
+            this.clickFunc = clickFunc;
         }
     }
 }
