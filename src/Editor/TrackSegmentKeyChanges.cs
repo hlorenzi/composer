@@ -4,26 +4,26 @@ using System.Drawing;
 
 namespace Composer.Editor
 {
-    class TrackSegmentMeterChanges : TrackSegment
+    class TrackSegmentKeyChanges : TrackSegment
     {
-        public List<Project.MeterChange> affectingMeterChanges;
+        public List<Project.KeyChange> affectingKeyChanges;
 
 
-        public TrackSegmentMeterChanges(
+        public TrackSegmentKeyChanges(
             ViewManager manager,
             Row row)
             : base(manager, row)
         {
-            this.affectingMeterChanges = new List<Project.MeterChange>();
+            this.affectingKeyChanges = new List<Project.KeyChange>();
         }
 
 
         public override void Rebuild(float x, float y)
         {
-            this.affectingMeterChanges.Clear();
+            this.affectingKeyChanges.Clear();
 
-            foreach (var meterChange in this.manager.project.meterChanges.EnumerateAffectingRange(this.row.timeRange))
-                this.affectingMeterChanges.Add(meterChange);
+            foreach (var keyChange in this.manager.project.keyChanges.EnumerateAffectingRange(this.row.timeRange))
+                this.affectingKeyChanges.Add(keyChange);
 
             this.layoutRect = new Util.Rect(
                 x,

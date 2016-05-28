@@ -57,6 +57,9 @@ namespace Composer.Editor
 
                 var row = new Row(this, new Util.TimeRange(currentTime, endTime), isLastRow);
 
+                row.trackSegmentKeyChanges = new TrackSegmentKeyChanges(this, row);
+                row.trackSegments.Add(row.trackSegmentKeyChanges);
+
                 row.trackSegmentMeterChanges = new TrackSegmentMeterChanges(this, row);
                 row.trackSegments.Add(row.trackSegmentMeterChanges);
 
@@ -72,6 +75,9 @@ namespace Composer.Editor
                 currentTime = endTime;
                 currentSegment++;
             }
+
+            foreach (var keyChange in this.project.keyChanges)
+                this.elements.Add(new ElementKeyChange(this, keyChange));
 
             foreach (var meterChange in this.project.meterChanges)
                 this.elements.Add(new ElementMeterChange(this, meterChange));

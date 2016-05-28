@@ -11,6 +11,7 @@ namespace Composer.Editor
         public Util.Rect layoutRect;
         public List<InteractableRegion> interactableRegions;
 
+        public TrackSegmentKeyChanges trackSegmentKeyChanges;
         public TrackSegmentMeterChanges trackSegmentMeterChanges;
         public List<TrackSegment> trackSegments;
 

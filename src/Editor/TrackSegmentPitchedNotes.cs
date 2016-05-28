@@ -23,8 +23,8 @@ namespace Composer.Editor
 
         public override void Rebuild(float x, float y)
         {
-            this.minPitch = Util.Pitch.FromMidiPitch(0);
-            this.maxPitch = Util.Pitch.FromMidiPitch(12);
+            this.minPitch = Util.Pitch.FromMidiPitch(60);
+            this.maxPitch = Util.Pitch.FromMidiPitch(72);
 
             // Find minimum and maximum note pitches in the segment's time range.
             foreach (var track in this.projectTracks)
@@ -72,28 +72,18 @@ namespace Composer.Editor
         {
             var rowEndTime = System.Math.Max(this.row.timeRange.End, this.row.resizeEndTime);
             var rowDuration = rowEndTime - this.row.timeRange.Start;
-            var endX = (int)(this.layoutRect.xMin + rowDuration * this.manager.TimeToPixelsMultiplier);
-
-            // Draw pitch separators.
-            for (var p = 0; p <= this.maxPitch.MidiPitch - this.minPitch.MidiPitch; p++)
-            {
-                g.DrawLine(Pens.LightGray,
-                    (int)this.notesRect.xMin,
-                    (int)(this.notesRect.yMax - (p + 1) * this.manager.PitchedNoteHeight),
-                    endX,
-                    (int)(this.notesRect.yMax - (p + 1) * this.manager.PitchedNoteHeight));
-            }
+            var rowEndX = (int)(this.layoutRect.xMin + rowDuration * this.manager.TimeToPixelsMultiplier);
 
             // Draw beat separators.
-            for (var i = 0; i < this.row.trackSegmentMeterChanges.meterChanges.Count; i++)
+            for (var i = 0; i < this.row.trackSegmentMeterChanges.affectingMeterChanges.Count; i++)
             {
-                var meterChange = this.row.trackSegmentMeterChanges.meterChanges[i];
+                var meterChange = this.row.trackSegmentMeterChanges.affectingMeterChanges[i];
                 if (meterChange == null)
                     continue;
 
                 var meterEndTime = rowEndTime;
-                if (i + 1 < this.row.trackSegmentMeterChanges.meterChanges.Count)
-                    meterEndTime = this.row.trackSegmentMeterChanges.meterChanges[i + 1].time;
+                if (i + 1 < this.row.trackSegmentMeterChanges.affectingMeterChanges.Count)
+                    meterEndTime = this.row.trackSegmentMeterChanges.affectingMeterChanges[i + 1].time;
 
                 var beatCount = 0;
                 var beatDuration = this.manager.project.WholeNoteDuration / meterChange.meter.denominator;
@@ -116,10 +106,70 @@ namespace Composer.Editor
                 }
             }
 
+            using (var font = new Font("Verdana", this.manager.PitchedNoteHeight / 1.5f))
+            {
+                // Draw pitch separators.
+                for (var i = 0; i < this.row.trackSegmentKeyChanges.affectingKeyChanges.Count; i++)
+                {
+                    var keyChange = this.row.trackSegmentKeyChanges.affectingKeyChanges[i];
+
+                    var keyStartTime = this.row.timeRange.Start;
+                    if (keyChange != null)
+                        keyStartTime = System.Math.Max(keyStartTime, keyChange.time);
+
+                    var keyEndTime = rowEndTime;
+                    if (i + 1 < this.row.trackSegmentKeyChanges.affectingKeyChanges.Count)
+                        keyEndTime = this.row.trackSegmentKeyChanges.affectingKeyChanges[i + 1].time;
+
+                    var keyStartX = (int)
+                        (this.notesRect.xMin + (keyStartTime - this.row.timeRange.Start) *
+                        this.manager.TimeToPixelsMultiplier);
+
+                    var keyEndX = (int)
+                        (this.notesRect.xMin + (keyEndTime - this.row.timeRange.Start) *
+                        this.manager.TimeToPixelsMultiplier);
+
+                    for (var p = this.minPitch.MidiPitch; p <= this.maxPitch.MidiPitch; p++)
+                    {
+                        var pitch = Util.Pitch.FromMidiPitch(p);
+                        var relativePitch = Util.RelativePitchData.MakeFromPitch(pitch);
+
+                        var isTonicPitch =
+                            keyChange != null &&
+                            relativePitch == keyChange.key.tonicPitch;
+
+                        var y = (int)
+                            (this.notesRect.yMax - (p - this.minPitch.MidiPitch) *
+                            this.manager.PitchedNoteHeight);
+
+                        g.DrawLine(isTonicPitch ? Pens.Gray : Pens.LightGray,
+                            keyStartX, y,
+                            keyEndX, y);
+
+                        var octave = (int)(pitch.MidiPitch / 12);
+
+                        if (keyChange == null || keyChange.key.HasPitch(relativePitch))
+                        {
+                            g.DrawString(
+                                Util.RelativePitchData.GetSimpleName(relativePitch),
+                                font,
+                                Brushes.MediumVioletRed,
+                                keyStartX + 3, y - this.manager.PitchedNoteHeight);
+
+                            g.DrawString(
+                                octave.ToString(),
+                                font,
+                                Brushes.MediumVioletRed,
+                                keyStartX + 15, y - this.manager.PitchedNoteHeight);
+                        }
+                    }
+                }
+            }
+
             // Draw frame.
             g.DrawRectangle(Pens.Black,
                 (int)this.notesRect.xMin, (int)this.notesRect.yMin,
-                endX - (int)this.notesRect.xMin, (int)this.notesRect.ySize);
+                rowEndX - (int)this.notesRect.xMin, (int)this.notesRect.ySize);
 
             g.DrawLine(Pens.Black,
                 (int)this.notesRect.xMax - 1, (int)this.notesRect.yMin,

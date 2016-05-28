@@ -6,10 +6,10 @@
         public Util.Meter meter;
 
 
-        public MeterChange(float time, Util.Meter newMeter)
+        public MeterChange(float time, Util.Meter meter)
         {
             this.time = time;
-            this.meter = newMeter;
+            this.meter = meter;
         }
 
 

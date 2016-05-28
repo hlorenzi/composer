@@ -4,9 +4,9 @@ using System.Drawing;
 
 namespace Composer.Editor
 {
-    class ElementMeterChange : Element
+    class ElementKeyChange : Element
     {
-        Project.MeterChange projectMeterChange;
+        Project.KeyChange projectKeyChange;
 
         Row row;
         float time;
@@ -17,14 +17,14 @@ namespace Composer.Editor
         public const int HANDLE_HEIGHT = 16;
 
 
-        public ElementMeterChange(
+        public ElementKeyChange(
             ViewManager manager,
-            Project.MeterChange projectMeterChange)
+            Project.KeyChange projectKeyChange)
             : base(manager)
         {
-            this.projectMeterChange = projectMeterChange;
+            this.projectKeyChange = projectKeyChange;
             this.interactableRegions = new List<InteractableRegion>();
-            this.time = projectMeterChange.time;
+            this.time = projectKeyChange.time;
         }
 
 
@@ -37,7 +37,7 @@ namespace Composer.Editor
             this.row = this.manager.GetRowOverlapping(this.time);
             if (this.row != null)
             {
-                var track = this.row.trackSegmentMeterChanges;
+                var track = this.row.trackSegmentKeyChanges;
                 var timeMinusTrackStart = this.time - this.row.timeRange.Start;
 
                 var handleRect = new Util.Rect(
@@ -54,7 +54,7 @@ namespace Composer.Editor
 
         public override void DragStart()
         {
-            this.timeDragStart = this.projectMeterChange.time;
+            this.timeDragStart = this.projectKeyChange.time;
         }
 
 
@@ -69,7 +69,7 @@ namespace Composer.Editor
 
         public override void DragEnd()
         {
-            this.manager.project.MoveMeterChange(this.projectMeterChange, this.time);
+            this.manager.project.MoveKeyChange(this.projectKeyChange, this.time);
         }
 
 
@@ -82,28 +82,28 @@ namespace Composer.Editor
                 (this.time - this.row.timeRange.Start) * this.manager.TimeToPixelsMultiplier);
 
             using (var pen = new Pen(
-                selected ? Color.DarkCyan :
-                hovering ? Color.Aquamarine : Color.MediumAquamarine,
+                selected ? Color.DarkMagenta :
+                hovering ? Color.Violet : Color.MediumVioletRed,
                 3))
             {
                 g.DrawLine(pen,
-                    x, (int)this.row.trackSegmentMeterChanges.layoutRect.yMin,
+                    x, (int)this.row.trackSegmentKeyChanges.layoutRect.yMin,
                     x, (int)this.row.layoutRect.yMax);
 
                 g.FillRectangle(
-                    selected ? Brushes.DarkCyan :
-                    hovering ? Brushes.Aquamarine : Brushes.MediumAquamarine,
-                    x - HANDLE_WIDTH / 2, (int)this.row.trackSegmentMeterChanges.layoutRect.yMin,
+                    selected ? Brushes.DarkMagenta :
+                    hovering ? Brushes.Violet : Brushes.MediumVioletRed,
+                    x - HANDLE_WIDTH / 2, (int)this.row.trackSegmentKeyChanges.layoutRect.yMin,
                     HANDLE_WIDTH, HANDLE_HEIGHT);
             }
 
             using (var font = new Font("Verdana", HANDLE_HEIGHT / 2))
             {
                 g.DrawString(
-                    this.projectMeterChange.GetDisplayString(),
+                    this.projectKeyChange.GetDisplayString(),
                     font,
-                    Brushes.MediumAquamarine,
-                    x + HANDLE_HEIGHT / 2, (int)this.row.trackSegmentMeterChanges.layoutRect.yMin);
+                    Brushes.MediumVioletRed,
+                    x + HANDLE_HEIGHT / 2, (int)this.row.trackSegmentKeyChanges.layoutRect.yMin);
             }
         }
     }

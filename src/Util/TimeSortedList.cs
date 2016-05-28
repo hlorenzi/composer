@@ -51,7 +51,6 @@ namespace Composer.Util
         {
             T lastItem = default(T);
             var gotFirst = false;
-            var yieldedAny = false;
 
             foreach (var item in this.internalList)
             {
@@ -64,13 +63,14 @@ namespace Composer.Util
                         if (itemTime > timeRange.Start)
                             yield return lastItem;
                     }
-                    yieldedAny = true;
                     yield return item;
                 }
-                lastItem = item;
+
+                if (itemTime <= timeRange.Start)
+                    lastItem = item;
             }
 
-            if (!yieldedAny)
+            if (!gotFirst)
                 yield return lastItem;
         }
 
