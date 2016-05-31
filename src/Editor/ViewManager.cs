@@ -17,6 +17,7 @@ namespace Composer.Editor
         float timeDragOrigin;
         Util.Pitch pitchDragOrigin;
 
+        public int currentTrack;
         public Element currentHoverElement;
         public InteractableRegion currentHoverRegion;
         public InteractableRegion currentDraggingIsolatedRegion;
@@ -35,13 +36,6 @@ namespace Composer.Editor
         {
             this.rows.Clear();
             this.elements.Clear();
-
-            var projectPitchedNoteTracks = new List<Project.TrackPitchedNotes>();
-            foreach (var track in this.project.tracks)
-            {
-                if (track is Project.TrackPitchedNotes)
-                    projectPitchedNoteTracks.Add((Project.TrackPitchedNotes)track);
-            }
 
             var currentTime = 0f;
             var currentSegment = 0;
@@ -65,6 +59,9 @@ namespace Composer.Editor
 
                 foreach (var track in this.project.tracks)
                 {
+                    if (!track.visible)
+                        continue;
+
                     if (track is Project.TrackPitchedNotes)
                         row.trackSegments.Add(new TrackSegmentPitchedNotes(
                             this, row,
@@ -84,6 +81,9 @@ namespace Composer.Editor
 
             foreach (var track in this.project.tracks)
             {
+                if (!track.visible)
+                    continue;
+
                 var trackPitchedNotes = (track as Project.TrackPitchedNotes);
                 if (trackPitchedNotes != null)
                 {

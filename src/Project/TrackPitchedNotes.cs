@@ -8,8 +8,9 @@ namespace Composer.Project
         public Util.TimeRangeSortedList<PitchedNote> notes;
 
 
-        public TrackPitchedNotes()
+        public TrackPitchedNotes(string name)
         {
+            this.name = name;
             this.notes = new Util.TimeRangeSortedList<PitchedNote>(n => n.timeRange);
         }
 

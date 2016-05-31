@@ -7,7 +7,7 @@ namespace Composer.Editor
     class ControlEditor : Control
     {
         FormMain ownerFormMain;
-        ViewManager viewManager;
+        public ViewManager viewManager;
 
 
         public ControlEditor(FormMain owner)

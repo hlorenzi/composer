@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
 
 namespace Composer.Project
@@ -13,15 +12,13 @@ namespace Composer.Project
         public List<Track> tracks;
 
 
-        public Project()
+        public Project(float startingLength)
         {
-            this.length = this.WholeNoteDuration * 4;
+            this.length = startingLength;
             this.sectionBreaks = new Util.TimeSortedList<SectionBreak>(sb => sb.time);
             this.keyChanges = new Util.TimeSortedList<KeyChange>(kc => kc.time);
             this.meterChanges = new Util.TimeSortedList<MeterChange>(mc => mc.time);
             this.tracks = new List<Track>();
-
-            this.InsertMeterChange(new MeterChange(0, new Util.Meter(4, 4)));
         }
 
 
