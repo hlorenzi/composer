@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
 
@@ -20,6 +21,14 @@ namespace Composer.Editor
         }
 
 
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            this.viewManager.SetSize(this.Width, this.Height);
+            this.viewManager.Rebuild();
+        }
+
+
         public void Rebuild()
         {
             this.viewManager.Rebuild();
@@ -35,7 +44,10 @@ namespace Composer.Editor
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            this.viewManager.OnMouseDown(e.X, e.Y, ModifierKeys == Keys.Control, ModifierKeys == Keys.Shift);
+            this.viewManager.OnMouseDown(
+                e.Button != MouseButtons.Left,
+                e.X, e.Y,
+                ModifierKeys == Keys.Control, ModifierKeys == Keys.Shift);
             base.OnMouseDown(e);
         }
 

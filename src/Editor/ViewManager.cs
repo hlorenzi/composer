@@ -11,13 +11,22 @@ namespace Composer.Editor
         public List<Row> rows;
         public List<Element> elements;
 
+        float width, height;
+        float scrollX, scrollY;
+        Util.Rect layoutRect;
+
+        enum MouseAction
+        {
+            Selection, Scrolling
+        }
+
         bool mouseIsDown;
+        MouseAction mouseAction;
         float mouseCurrentX, mouseCurrentY;
         float mouseDragOriginX, mouseDragOriginY;
         float timeDragOrigin;
         Util.Pitch pitchDragOrigin;
 
-        public int currentTrack;
         public Element currentHoverElement;
         public InteractableRegion currentHoverRegion;
         public InteractableRegion currentDraggingIsolatedRegion;
@@ -29,6 +38,13 @@ namespace Composer.Editor
             this.project = project;
             this.rows = new List<Row>();
             this.elements = new List<Element>();
+        }
+
+
+        public void SetSize(float width, float height)
+        {
+            this.width = width;
+            this.height = height;
         }
 
 
@@ -99,16 +115,21 @@ namespace Composer.Editor
 
             RefreshTracks();
             RefreshElements();
+            this.ScrollTo(this.scrollX, this.scrollY);
         }
 
 
         public void RefreshTracks()
         {
+            this.layoutRect = new Util.Rect(0, 0, 0, 0);
+
             var y = TopMargin;
             foreach (var row in this.rows)
             {
                 row.Rebuild(LeftMargin, y);
                 y = row.layoutRect.yMax;
+
+                this.layoutRect = this.layoutRect.Include(row.layoutRect);
             }
         }
 
@@ -129,25 +150,50 @@ namespace Composer.Editor
         }
 
 
+        public void ScrollTo(float x, float y)
+        {
+            this.scrollX =
+                System.Math.Max(0,
+                System.Math.Min(this.layoutRect.xMax - 100, x));
+
+            this.scrollY =
+                System.Math.Max(0,
+                System.Math.Min(this.layoutRect.yMax - this.height + 30, y));
+        }
+
+
         public void OnMouseMove(float x, float y)
         {
-            this.mouseCurrentX = x;
-            this.mouseCurrentY = y;
+            this.mouseCurrentX = x + scrollX;
+            this.mouseCurrentY = y + scrollY;
 
             if (this.mouseIsDown)
             {
-                if (this.currentHoverRegion != null && this.currentHoverRegion.isolated)
-                    this.currentHoverRegion.dragFunc?.Invoke(this.currentHoverRegion);
-                else
+                if (this.mouseAction == MouseAction.Selection)
                 {
-                    foreach (var element in this.elements)
+                    if (this.currentHoverRegion != null && this.currentHoverRegion.isolated)
+                        this.currentHoverRegion.dragFunc?.Invoke(this.currentHoverRegion);
+                    else
                     {
-                        if (element.selected)
+                        foreach (var element in this.elements)
                         {
-                            element.Drag();
-                            element.Rebuild();
+                            if (element.selected)
+                            {
+                                element.Drag();
+                                element.Rebuild();
+                            }
                         }
                     }
+                }
+                else if (this.mouseAction == MouseAction.Scrolling)
+                {
+                    var deltaX = this.mouseDragOriginX - this.mouseCurrentX;
+                    var deltaY = this.mouseDragOriginY - this.mouseCurrentY;
+
+                    this.ScrollTo(this.scrollX + deltaX, this.scrollY + deltaY);
+
+                    this.mouseCurrentX = this.mouseDragOriginX = x + scrollX;
+                    this.mouseCurrentY = this.mouseDragOriginY = y + scrollY;
                 }
 
                 this.control.Refresh();
@@ -163,7 +209,7 @@ namespace Composer.Editor
                 {
                     foreach (var region in element.interactableRegions)
                     {
-                        if (region.rect.Contains(x, y))
+                        if (region.rect.Contains(x + scrollX, y + scrollY))
                         {
                             this.currentHoverElement = element;
                             this.currentHoverRegion = region;
@@ -175,7 +221,7 @@ namespace Composer.Editor
                 {
                     foreach (var region in row.interactableRegions)
                     {
-                        if (region.rect.Contains(x, y))
+                        if (region.rect.Contains(x + scrollX, y + scrollY))
                         {
                             this.currentHoverElement = null;
                             this.currentHoverRegion = region;
@@ -206,37 +252,46 @@ namespace Composer.Editor
         }
 
 
-        public void OnMouseDown(float x, float y, bool ctrlKey, bool shiftKey)
+        public void OnMouseDown(bool scroll, float x, float y, bool ctrlKey, bool shiftKey)
         {
             this.mouseIsDown = true;
-            this.mouseDragOriginX = x;
-            this.mouseDragOriginY = y;
+            this.mouseDragOriginX = x + scrollX;
+            this.mouseDragOriginY = y + scrollY;
 
-            if ((!ctrlKey && (this.currentHoverElement == null || !this.currentHoverElement.selected)) ||
-                this.currentHoverRegion != null && this.currentHoverRegion.isolated)
-                UnselectAll();
+            this.mouseAction = (scroll ? MouseAction.Scrolling : MouseAction.Selection);
 
-            if (this.currentHoverElement != null)
-                this.currentHoverElement.selected = true;
-
-            this.timeDragOrigin = this.GetTimeAtPosition(x, y, true);
-            this.pitchDragOrigin = this.GetTrackSegmentAtPosition(x, y).GetPitchAtPosition(y);
-
-            if (this.currentHoverRegion != null && this.currentHoverRegion.isolated)
+            if (this.mouseAction == MouseAction.Selection)
             {
-                this.currentDraggingIsolatedRegion = this.currentHoverRegion;
-                this.currentDraggingIsolatedRegion.dragStartFunc?.Invoke(this.currentDraggingIsolatedRegion);
-            }
-            else
-            {
-                foreach (var element in this.elements)
+                if ((!ctrlKey && (this.currentHoverElement == null || !this.currentHoverElement.selected)) ||
+                    this.currentHoverRegion != null && this.currentHoverRegion.isolated)
+                    UnselectAll();
+
+                if (this.currentHoverElement != null)
+                    this.currentHoverElement.selected = true;
+
+                this.timeDragOrigin =
+                    this.GetTimeAtPosition(this.mouseDragOriginX, this.mouseDragOriginY, true);
+
+                this.pitchDragOrigin =
+                    this.GetTrackSegmentAtPosition(this.mouseDragOriginX, this.mouseDragOriginY).
+                    GetPitchAtPosition(this.mouseDragOriginY);
+
+                if (this.currentHoverRegion != null && this.currentHoverRegion.isolated)
                 {
-                    if (element.selected)
-                        element.DragStart();
+                    this.currentDraggingIsolatedRegion = this.currentHoverRegion;
+                    this.currentDraggingIsolatedRegion.dragStartFunc?.Invoke(this.currentDraggingIsolatedRegion);
                 }
-            }
+                else
+                {
+                    foreach (var element in this.elements)
+                    {
+                        if (element.selected)
+                            element.DragStart();
+                    }
+                }
 
-            this.control.Refresh();
+                this.control.Refresh();
+            }
         }
 
 
@@ -244,33 +299,38 @@ namespace Composer.Editor
         {
             this.mouseIsDown = false;
 
-            if (this.currentDraggingIsolatedRegion != null)
+            if (this.mouseAction == MouseAction.Selection)
             {
-                this.currentDraggingIsolatedRegion.dragEndFunc?.Invoke(this.currentDraggingIsolatedRegion);
-
-                if (this.currentHoverRegion == this.currentDraggingIsolatedRegion)
-                    this.currentDraggingIsolatedRegion.clickFunc?.Invoke(this.currentDraggingIsolatedRegion);
-
-                this.currentDraggingIsolatedRegion = null;
-            }
-            else
-            {
-                foreach (var element in this.elements)
+                if (this.currentDraggingIsolatedRegion != null)
                 {
-                    if (element.selected)
-                        element.DragEnd();
+                    this.currentDraggingIsolatedRegion.dragEndFunc?.Invoke(this.currentDraggingIsolatedRegion);
+
+                    if (this.currentHoverRegion == this.currentDraggingIsolatedRegion)
+                        this.currentDraggingIsolatedRegion.clickFunc?.Invoke(this.currentDraggingIsolatedRegion);
+
+                    this.currentDraggingIsolatedRegion = null;
+                }
+                else
+                {
+                    foreach (var element in this.elements)
+                    {
+                        if (element.selected)
+                            element.DragEnd();
+                    }
+
+                    this.RefreshTracks();
+                    this.RefreshElements();
                 }
 
-                this.RefreshTracks();
-                this.RefreshElements();
+                this.control.Refresh();
             }
-
-            this.control.Refresh();
         }
 
 
         public void Draw(Graphics g)
         {
+            g.TranslateTransform(-scrollX, -scrollY);
+
             foreach (var row in this.rows)
                 row.Draw(g);
 
