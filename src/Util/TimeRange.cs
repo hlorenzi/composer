@@ -52,9 +52,21 @@
         }
 
 
+        public bool OverlapsInclusive(float time)
+        {
+            return time >= this.start && time <= this.end;
+        }
+
+
         public bool OverlapsRange(Util.TimeRange other)
         {
             return this.start < other.end && this.end > other.start;
+        }
+
+
+        public bool OverlapsRangeInclusive(Util.TimeRange other)
+        {
+            return this.start <= other.end && this.end >= other.start;
         }
     }
 }

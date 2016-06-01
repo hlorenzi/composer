@@ -17,7 +17,7 @@ namespace Composer.Editor
 
         enum MouseAction
         {
-            Selection, Scrolling
+            Selection, Cursor, Scrolling
         }
 
         bool mouseIsDown;
@@ -27,6 +27,9 @@ namespace Composer.Editor
         float timeDragOrigin;
         Util.Pitch pitchDragOrigin;
 
+        public bool cursorVisible;
+        public float cursorTime1, cursorTime2;
+        public int cursorTrack1, cursorTrack2;
         public Element currentHoverElement;
         public InteractableRegion currentHoverRegion;
         public InteractableRegion currentDraggingIsolatedRegion;
@@ -45,6 +48,18 @@ namespace Composer.Editor
         {
             this.width = width;
             this.height = height;
+        }
+
+
+        public void SetCursorTimeRange(float time1, float time2)
+        {
+            this.cursorTime1 =
+                System.Math.Max(0,
+                System.Math.Min(this.project.Length, time1));
+
+            this.cursorTime2 =
+                System.Math.Max(0,
+                System.Math.Min(this.project.Length, time2));
         }
 
 
@@ -112,6 +127,8 @@ namespace Composer.Editor
             {
                 element.AssignTrack();
             }
+
+            this.SetCursorTimeRange(this.cursorTime1, this.cursorTime2);
 
             RefreshTracks();
             RefreshElements();
@@ -195,6 +212,13 @@ namespace Composer.Editor
                     this.mouseCurrentX = this.mouseDragOriginX = x + scrollX;
                     this.mouseCurrentY = this.mouseDragOriginY = y + scrollY;
                 }
+                else if (this.mouseAction == MouseAction.Cursor)
+                {
+                    var time = this.GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY, true);
+                    var timeSnapped = (float)(System.Math.Round(time / TimeSnap) * TimeSnap);
+
+                    this.SetCursorTimeRange(this.cursorTime1, timeSnapped);
+                }
 
                 this.control.Refresh();
             }
@@ -258,10 +282,13 @@ namespace Composer.Editor
             this.mouseDragOriginX = x + scrollX;
             this.mouseDragOriginY = y + scrollY;
 
-            this.mouseAction = (scroll ? MouseAction.Scrolling : MouseAction.Selection);
-
-            if (this.mouseAction == MouseAction.Selection)
+            if (scroll)
+                this.mouseAction = MouseAction.Scrolling;
+            else
             {
+                this.mouseAction = MouseAction.Selection;
+                this.cursorVisible = false;
+
                 if ((!ctrlKey && (this.currentHoverElement == null || !this.currentHoverElement.selected)) ||
                     this.currentHoverRegion != null && this.currentHoverRegion.isolated)
                     UnselectAll();
@@ -272,14 +299,22 @@ namespace Composer.Editor
                 this.timeDragOrigin =
                     this.GetTimeAtPosition(this.mouseDragOriginX, this.mouseDragOriginY, true);
 
+                var timeSnapped = (float)(System.Math.Round(this.timeDragOrigin / TimeSnap) * TimeSnap);
+
                 this.pitchDragOrigin =
                     this.GetTrackSegmentAtPosition(this.mouseDragOriginX, this.mouseDragOriginY).
                     GetPitchAtPosition(this.mouseDragOriginY);
-
+                
                 if (this.currentHoverRegion != null && this.currentHoverRegion.isolated)
                 {
                     this.currentDraggingIsolatedRegion = this.currentHoverRegion;
                     this.currentDraggingIsolatedRegion.dragStartFunc?.Invoke(this.currentDraggingIsolatedRegion);
+                }
+                else if (!ctrlKey && !shiftKey && this.currentHoverRegion == null)
+                {
+                    this.mouseAction = MouseAction.Cursor;
+                    this.SetCursorTimeRange(timeSnapped, timeSnapped);
+                    this.cursorVisible = true;
                 }
                 else
                 {
@@ -455,6 +490,17 @@ namespace Composer.Editor
         public float TimeSnap
         {
             get { return this.project.WholeNoteDuration / 16; }
+        }
+
+
+        public Util.TimeRange CursorTimeRange
+        {
+            get
+            {
+                return new Util.TimeRange(
+                    System.Math.Min(this.cursorTime1, this.cursorTime2),
+                    System.Math.Max(this.cursorTime1, this.cursorTime2));
+            }
         }
 
 
