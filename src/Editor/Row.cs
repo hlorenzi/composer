@@ -9,7 +9,7 @@ namespace Composer.Editor
         ViewManager manager;
         public Util.TimeRange timeRange;
         public Util.Rect layoutRect;
-        public Util.Rect tracksRect;
+        public Util.Rect contentRect;
         public List<InteractableRegion> interactableRegions;
 
         public TrackSegmentKeyChanges trackSegmentKeyChanges;
@@ -47,7 +47,7 @@ namespace Composer.Editor
                 x, y,
                 x, y + ADD_SECTION_BUTTON_SIZE + ADD_SECTION_BUTTON_MARGIN + SECTION_HANDLE_HEIGHT);
 
-            this.tracksRect = new Util.Rect(
+            this.contentRect = new Util.Rect(
                 x, this.layoutRect.yMax,
                 x, this.layoutRect.yMax);
 
@@ -55,7 +55,7 @@ namespace Composer.Editor
             {
                 track.Rebuild(x, this.layoutRect.yMax);
                 this.layoutRect = this.layoutRect.Include(track.layoutRect);
-                this.tracksRect = this.tracksRect.Include(track.layoutRect);
+                this.contentRect = this.contentRect.Include(track.contentRect);
             }
 
             this.layoutRect.yMax += ADD_SECTION_BUTTON_MARGIN;
@@ -196,6 +196,9 @@ namespace Composer.Editor
         private void DrawCursor(Graphics g)
         {
             var cursorTimeRange = this.manager.CursorTimeRange;
+            var cursorFirstTrack = this.manager.CursorFirstTrackIndex;
+            var cursorLastTrack = this.manager.CursorLastTrackIndex;
+
             if (this.manager.cursorVisible &&
                 this.timeRange.OverlapsRangeInclusive(cursorTimeRange))
             {
@@ -208,47 +211,50 @@ namespace Composer.Editor
                 var cursorEndX = this.layoutRect.xMin +
                     (cursorTimeRange.End - this.timeRange.Start) * this.manager.TimeToPixelsMultiplier;
 
+                var cursorStartY = this.trackSegments[cursorFirstTrack].layoutRect.yMin;
+                var cursorEndY = this.trackSegments[cursorLastTrack].layoutRect.yMax;
+
                 using (var pen = new Pen(Color.Blue, 3))
                 {
                     if (drawStart)
                     {
                         g.DrawLine(pen,
-                            cursorStartX, this.tracksRect.yMin,
-                            cursorStartX, this.tracksRect.yMax);
+                            cursorStartX, cursorStartY,
+                            cursorStartX, cursorEndY);
 
                         g.FillPolygon(Brushes.Blue, new PointF[]
                         {
-                            new PointF(cursorStartX, this.tracksRect.yMin + 7),
-                            new PointF(cursorStartX, this.tracksRect.yMin),
-                            new PointF(cursorStartX + 7, this.tracksRect.yMin)
+                            new PointF(cursorStartX, cursorStartY + 7),
+                            new PointF(cursorStartX, cursorStartY),
+                            new PointF(cursorStartX + 7, cursorStartY)
                         });
 
                         g.FillPolygon(Brushes.Blue, new PointF[]
                         {
-                            new PointF(cursorStartX, this.tracksRect.yMax - 7),
-                            new PointF(cursorStartX, this.tracksRect.yMax),
-                            new PointF(cursorStartX + 7, this.tracksRect.yMax)
+                            new PointF(cursorStartX, cursorEndY - 7),
+                            new PointF(cursorStartX, cursorEndY),
+                            new PointF(cursorStartX + 7, cursorEndY)
                         });
                     }
 
                     if (drawEnd)
                     {
                         g.DrawLine(pen,
-                            cursorEndX, this.tracksRect.yMin,
-                            cursorEndX, this.tracksRect.yMax);
+                            cursorEndX, cursorStartY,
+                            cursorEndX, cursorEndY);
 
                         g.FillPolygon(Brushes.Blue, new PointF[]
                         {
-                            new PointF(cursorEndX, this.tracksRect.yMin + 7),
-                            new PointF(cursorEndX, this.tracksRect.yMin),
-                            new PointF(cursorEndX - 7, this.tracksRect.yMin)
+                            new PointF(cursorEndX, cursorStartY + 7),
+                            new PointF(cursorEndX, cursorStartY),
+                            new PointF(cursorEndX - 7, cursorStartY)
                         });
 
                         g.FillPolygon(Brushes.Blue, new PointF[]
                         {
-                            new PointF(cursorEndX, this.tracksRect.yMax - 7),
-                            new PointF(cursorEndX, this.tracksRect.yMax),
-                            new PointF(cursorEndX - 7, this.tracksRect.yMax)
+                            new PointF(cursorEndX, cursorEndY - 7),
+                            new PointF(cursorEndX, cursorEndY),
+                            new PointF(cursorEndX - 7, cursorEndY)
                         });
                     }
                 }
@@ -268,7 +274,7 @@ namespace Composer.Editor
             {
                 g.DrawLine(pen,
                     endX, (int)this.layoutRect.yMin + ADD_SECTION_BUTTON_SIZE + ADD_SECTION_BUTTON_MARGIN * 2,
-                    endX, (int)this.layoutRect.yMax);
+                    endX, (int)this.contentRect.yMax);
 
                 g.FillRectangle(
                     selected ? Brushes.Gray :

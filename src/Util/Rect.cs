@@ -14,6 +14,12 @@
         }
 
 
+        public Rect Clone()
+        {
+            return new Rect(this.xMin, this.yMin, this.xMin, this.yMax);
+        }
+
+
         public float xSize
         {
             get { return this.xMax - this.xMin; }

@@ -8,6 +8,7 @@ namespace Composer.Editor
         public ViewManager manager;
         public Row row;
         public Util.Rect layoutRect;
+        public Util.Rect contentRect;
 
 
         public TrackSegment(ViewManager manager, Row row)

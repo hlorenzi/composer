@@ -30,6 +30,8 @@ namespace Composer.Editor
                 y,
                 x + this.row.timeRange.Duration * this.manager.TimeToPixelsMultiplier,
                 y + ElementMeterChange.HANDLE_HEIGHT + 2);
+
+            this.contentRect = this.layoutRect.Clone();
         }
 
 

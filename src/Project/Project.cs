@@ -34,6 +34,12 @@ namespace Composer.Project
         }
 
 
+        public int GetTrackIndex(Track track)
+        {
+            return this.tracks.FindIndex(tr => tr == track);
+        }
+
+
         public void InsertSectionBreak(SectionBreak newSectionBreak)
         {
             if (newSectionBreak.time <= 0 || newSectionBreak.time >= this.length)
@@ -61,6 +67,13 @@ namespace Composer.Project
 
             this.meterChanges.RemoveAll(mc => mc.time == newMeterChange.time);
             this.meterChanges.Add(newMeterChange);
+        }
+
+
+        public void InsertPitchedNote(int trackIndex, PitchedNote pitchedNote)
+        {
+            var track = (TrackPitchedNotes)this.tracks[trackIndex];
+            track.InsertPitchedNote(pitchedNote);
         }
 
 

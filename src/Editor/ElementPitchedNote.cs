@@ -7,8 +7,8 @@ namespace Composer.Editor
     class ElementPitchedNote : Element
     {
         int assignedTrack = -1;
-        Project.PitchedNote projectPitchedNote;
-        Project.TrackPitchedNotes projectTrackPitchedNode;
+        public Project.PitchedNote projectPitchedNote;
+        public Project.TrackPitchedNotes projectTrackPitchedNode;
         List<Segment> segments;
 
         Util.TimeRange timeRangeDragStart;
@@ -78,10 +78,10 @@ namespace Composer.Editor
                     this.projectPitchedNote.timeRange.End) - trackPitchedNote.row.timeRange.Start;
 
                 var noteRect = new Util.Rect(
-                    trackPitchedNote.notesRect.xMin + tMult * startTimeMinusTrackStart,
-                    trackPitchedNote.notesRect.yMax - pMult * (midiPitchMinusTrackMin + 1),
-                    trackPitchedNote.notesRect.xMin + tMult * endTimeMinusTrackStart,
-                    trackPitchedNote.notesRect.yMax - pMult * midiPitchMinusTrackMin);
+                    trackPitchedNote.contentRect.xMin + tMult * startTimeMinusTrackStart,
+                    trackPitchedNote.contentRect.yMax - pMult * (midiPitchMinusTrackMin + 1),
+                    trackPitchedNote.contentRect.xMin + tMult * endTimeMinusTrackStart,
+                    trackPitchedNote.contentRect.yMax - pMult * midiPitchMinusTrackMin);
 
                 this.segments.Add(new Segment { noteRect = noteRect });
 
@@ -105,6 +105,50 @@ namespace Composer.Editor
 
             this.projectPitchedNote.pitch =
                 this.pitchDragStart.OffsetMidiPitchBy(this.manager.DragMidiPitchOffset);
+        }
+
+
+        public override void OnPressUp(bool ctrlKey, bool shiftKey)
+        {
+            this.projectPitchedNote.pitch =
+                this.projectPitchedNote.pitch.OffsetMidiPitchBy(shiftKey ? 12 : 1);
+        }
+
+
+        public override void OnPressDown(bool ctrlKey, bool shiftKey)
+        {
+            this.projectPitchedNote.pitch =
+                this.projectPitchedNote.pitch.OffsetMidiPitchBy(shiftKey ? -12 : -1);
+        }
+
+
+        public override void OnPressRight(bool ctrlKey, bool shiftKey)
+        {
+            if (this.manager.noteInsertionMode || shiftKey)
+            {
+                this.projectPitchedNote.timeRange.Duration =
+                    System.Math.Max(
+                        this.manager.TimeSnap,
+                        this.projectPitchedNote.timeRange.Duration + this.manager.TimeSnap);
+            }
+            else
+                this.projectPitchedNote.timeRange =
+                    this.projectPitchedNote.timeRange.OffsetBy(this.manager.TimeSnap);
+        }
+
+
+        public override void OnPressLeft(bool ctrlKey, bool shiftKey)
+        {
+            if (this.manager.noteInsertionMode || shiftKey)
+            {
+                this.projectPitchedNote.timeRange.Duration =
+                    System.Math.Max(
+                        this.manager.TimeSnap,
+                        this.projectPitchedNote.timeRange.Duration - this.manager.TimeSnap);
+            }
+            else
+                this.projectPitchedNote.timeRange =
+                    this.projectPitchedNote.timeRange.OffsetBy(-this.manager.TimeSnap);
         }
 
 

@@ -30,6 +30,30 @@ namespace Composer.Editor
         }
 
 
+        public virtual void OnPressUp(bool ctrlKey, bool shiftKey)
+        {
+
+        }
+
+
+        public virtual void OnPressDown(bool ctrlKey, bool shiftKey)
+        {
+
+        }
+
+
+        public virtual void OnPressRight(bool ctrlKey, bool shiftKey)
+        {
+
+        }
+
+
+        public virtual void OnPressLeft(bool ctrlKey, bool shiftKey)
+        {
+
+        }
+
+
         public virtual void DragStart()
         {
 

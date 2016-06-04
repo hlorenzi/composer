@@ -25,11 +25,13 @@ namespace Composer.Editor
         float mouseCurrentX, mouseCurrentY;
         float mouseDragOriginX, mouseDragOriginY;
         float timeDragOrigin;
+        int trackDragOrigin;
         Util.Pitch pitchDragOrigin;
 
         public bool cursorVisible;
         public float cursorTime1, cursorTime2;
         public int cursorTrack1, cursorTrack2;
+        public bool noteInsertionMode;
         public Element currentHoverElement;
         public InteractableRegion currentHoverRegion;
         public InteractableRegion currentDraggingIsolatedRegion;
@@ -51,6 +53,12 @@ namespace Composer.Editor
         }
 
 
+        public void SetCursorVisible(bool visible)
+        {
+            this.cursorVisible = visible;
+        }
+
+
         public void SetCursorTimeRange(float time1, float time2)
         {
             this.cursorTime1 =
@@ -60,6 +68,62 @@ namespace Composer.Editor
             this.cursorTime2 =
                 System.Math.Max(0,
                 System.Math.Min(this.project.Length, time2));
+        }
+
+
+        public void SetCursorTrackIndices(int track1, int track2)
+        {
+            this.cursorTrack1 = track1;
+            this.cursorTrack2 = track2;
+        }
+
+
+        public bool GetInsertionPosition(out int trackIndex, out float time)
+        {
+            trackIndex = -1;
+            time = 0;
+
+            if (!this.cursorVisible)
+                return false;
+
+            if (this.cursorTrack1 != this.cursorTrack2)
+                return false;
+
+            var trackSegment = this.rows[0].trackSegments[this.cursorTrack1];
+            var trackSegmentPitchedNotes = trackSegment as TrackSegmentPitchedNotes;
+            if (trackSegmentPitchedNotes != null)
+            {
+                trackIndex = this.project.GetTrackIndex(trackSegmentPitchedNotes.projectTracks[0]);
+                time = this.cursorTime1;
+                return true;
+            }
+
+            return false;
+        }
+
+
+        public void SetNoteInsertionMode(bool enabled)
+        {
+            this.noteInsertionMode = enabled;
+        }
+
+
+        public Project.PitchedNote GetNoteInsertionModeNote()
+        {
+            if (!this.noteInsertionMode)
+                return null;
+
+            foreach (var element in this.elements)
+            {
+                if (element.selected)
+                {
+                    var note = element as ElementPitchedNote;
+                    if (note != null)
+                        return note.projectPitchedNote;
+                }
+            }
+
+            return null;
         }
 
 
@@ -128,15 +192,16 @@ namespace Composer.Editor
                 element.AssignTrack();
             }
 
+            this.cursorVisible = false;
             this.SetCursorTimeRange(this.cursorTime1, this.cursorTime2);
+            this.SetCursorTrackIndices(this.cursorTrack1, this.cursorTrack2);
 
-            RefreshTracks();
-            RefreshElements();
+            Refresh();
             this.ScrollTo(this.scrollX, this.scrollY);
         }
 
 
-        public void RefreshTracks()
+        public void Refresh()
         {
             this.layoutRect = new Util.Rect(0, 0, 0, 0);
 
@@ -148,11 +213,7 @@ namespace Composer.Editor
 
                 this.layoutRect = this.layoutRect.Include(row.layoutRect);
             }
-        }
 
-
-        public void RefreshElements()
-        {
             foreach (var element in this.elements)
             {
                 element.Rebuild();
@@ -167,6 +228,23 @@ namespace Composer.Editor
         }
 
 
+        public void SetPitchedNoteSelection(int projectTrackIndex, Project.PitchedNote pitchedNote, bool selected)
+        {
+            var projectTrack = this.project.tracks[projectTrackIndex];
+
+            foreach (var element in this.elements)
+            {
+                var note = element as ElementPitchedNote;
+                if (note != null)
+                {
+                    if (note.projectTrackPitchedNode == projectTrack &&
+                        note.projectPitchedNote == pitchedNote)
+                        note.selected = selected;
+                }
+            }
+        }
+
+
         public void ScrollTo(float x, float y)
         {
             this.scrollX =
@@ -176,6 +254,87 @@ namespace Composer.Editor
             this.scrollY =
                 System.Math.Max(0,
                 System.Math.Min(this.layoutRect.yMax - this.height + 30, y));
+        }
+
+
+        public void OnPressUp(bool ctrlKey, bool shiftKey)
+        {
+            foreach (var element in this.elements)
+            {
+                if (element.selected)
+                {
+                    element.OnPressUp(ctrlKey, shiftKey);
+                    element.Rebuild();
+                }
+            }
+
+            this.Refresh();
+            this.control.Refresh();
+        }
+
+
+        public void OnPressDown(bool ctrlKey, bool shiftKey)
+        {
+            foreach (var element in this.elements)
+            {
+                if (element.selected)
+                {
+                    element.OnPressDown(ctrlKey, shiftKey);
+                    element.Rebuild();
+                }
+            }
+
+            this.Refresh();
+            this.control.Refresh();
+        }
+
+
+        public void OnPressRight(bool ctrlKey, bool shiftKey)
+        {
+            var anySelected = false;
+            foreach (var element in this.elements)
+            {
+                if (element.selected)
+                {
+                    anySelected = true;
+                    element.OnPressRight(ctrlKey, shiftKey);
+                    element.Rebuild();
+                }
+            }
+
+            if (!anySelected)
+            {
+                this.SetCursorTimeRange(this.cursorTime1 + this.TimeSnap, this.cursorTime2 + this.TimeSnap);
+                this.SetCursorVisible(true);
+            }
+
+            this.Refresh();
+            this.control.Refresh();
+        }
+
+
+        public void OnPressLeft(bool ctrlKey, bool shiftKey)
+        {
+            var anySelected = false;
+
+            foreach (var element in this.elements)
+            {
+                if (element.selected)
+                {
+                    anySelected = true;
+                    element.OnPressLeft(ctrlKey, shiftKey);
+                    element.Rebuild();
+                }
+            }
+
+            if (!anySelected)
+            {
+                this.SetCursorTimeRange(this.cursorTime1 - this.TimeSnap, this.cursorTime2 - this.TimeSnap);
+                this.SetCursorVisible(true);
+            }
+
+            this.Refresh();
+            this.control.Refresh();
         }
 
 
@@ -214,10 +373,13 @@ namespace Composer.Editor
                 }
                 else if (this.mouseAction == MouseAction.Cursor)
                 {
+                    var track = this.GetTrackIndexAtPosition(this.mouseCurrentX, this.mouseCurrentY);
+
                     var time = this.GetTimeAtPosition(this.mouseCurrentX, this.mouseCurrentY, true);
                     var timeSnapped = (float)(System.Math.Round(time / TimeSnap) * TimeSnap);
 
                     this.SetCursorTimeRange(this.cursorTime1, timeSnapped);
+                    this.SetCursorTrackIndices(this.cursorTrack1, track);
                 }
 
                 this.control.Refresh();
@@ -281,6 +443,7 @@ namespace Composer.Editor
             this.mouseIsDown = true;
             this.mouseDragOriginX = x + scrollX;
             this.mouseDragOriginY = y + scrollY;
+            this.noteInsertionMode = false;
 
             if (scroll)
                 this.mouseAction = MouseAction.Scrolling;
@@ -299,6 +462,9 @@ namespace Composer.Editor
                 this.timeDragOrigin =
                     this.GetTimeAtPosition(this.mouseDragOriginX, this.mouseDragOriginY, true);
 
+                this.trackDragOrigin =
+                    this.GetTrackIndexAtPosition(this.mouseDragOriginX, this.mouseDragOriginY);
+
                 var timeSnapped = (float)(System.Math.Round(this.timeDragOrigin / TimeSnap) * TimeSnap);
 
                 this.pitchDragOrigin =
@@ -314,6 +480,7 @@ namespace Composer.Editor
                 {
                     this.mouseAction = MouseAction.Cursor;
                     this.SetCursorTimeRange(timeSnapped, timeSnapped);
+                    this.SetCursorTrackIndices(this.trackDragOrigin, this.trackDragOrigin);
                     this.cursorVisible = true;
                 }
                 else
@@ -353,8 +520,7 @@ namespace Composer.Editor
                             element.DragEnd();
                     }
 
-                    this.RefreshTracks();
-                    this.RefreshElements();
+                    this.Refresh();
                 }
 
                 this.control.Refresh();
@@ -415,6 +581,25 @@ namespace Composer.Editor
 
             var lastRow = this.rows[this.rows.Count - 1];
             return lastRow.trackSegments[lastRow.trackSegments.Count - 1];
+        }
+
+
+        public int GetTrackIndexAtPosition(float x, float y)
+        {
+            foreach (var row in this.rows)
+            {
+                for (var i = 0; i < row.trackSegments.Count; i++)
+                {
+                    if (row.trackSegments[i].layoutRect.ContainsY(y))
+                        return i;
+                }
+            }
+
+            if (y <= this.TopMargin)
+                return 0;
+
+            var lastRow = this.rows[this.rows.Count - 1];
+            return lastRow.trackSegments.Count - 1;
         }
 
 
@@ -500,6 +685,24 @@ namespace Composer.Editor
                 return new Util.TimeRange(
                     System.Math.Min(this.cursorTime1, this.cursorTime2),
                     System.Math.Max(this.cursorTime1, this.cursorTime2));
+            }
+        }
+
+
+        public int CursorFirstTrackIndex
+        {
+            get
+            {
+                return System.Math.Min(this.cursorTrack1, this.cursorTrack2);
+            }
+        }
+
+
+        public int CursorLastTrackIndex
+        {
+            get
+            {
+                return System.Math.Max(this.cursorTrack1, this.cursorTrack2);
             }
         }
 

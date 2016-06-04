@@ -15,6 +15,12 @@ namespace Composer.Project
         }
 
 
+        public void InsertPitchedNote(PitchedNote pitchedNote)
+        {
+            this.notes.Add(pitchedNote);
+        }
+
+
         public override void InsertEmptySpace(float startTime, float duration)
         {
             this.SplitNotesAt(startTime);
@@ -33,12 +39,15 @@ namespace Composer.Project
         }
 
 
-        public void SplitNotesAt(float splitTime)
+        public void SplitNotesAt(float splitTime, Util.Pitch? onlyAtPitch = null)
         {
             var newNotes = new List<PitchedNote>();
 
             foreach (var note in this.notes.EnumerateOverlapping(splitTime))
             {
+                if (onlyAtPitch.HasValue && note.pitch.MidiPitch != onlyAtPitch.Value.MidiPitch)
+                    continue;
+
                 newNotes.Add(new PitchedNote
                 {
                     pitch = note.pitch,

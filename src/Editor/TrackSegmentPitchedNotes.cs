@@ -8,7 +8,8 @@ namespace Composer.Editor
     {
         public Util.Pitch minPitch, maxPitch;
         public List<Project.TrackPitchedNotes> projectTracks;
-        public Util.Rect notesRect;
+
+        const float LAYOUT_MARGIN = 4;
 
 
         public TrackSegmentPitchedNotes(
@@ -24,38 +25,42 @@ namespace Composer.Editor
         public override void Rebuild(float x, float y)
         {
             this.minPitch = Util.Pitch.FromMidiPitch(60);
-            this.maxPitch = Util.Pitch.FromMidiPitch(72);
+            this.maxPitch = Util.Pitch.FromMidiPitch(71);
 
             // Find minimum and maximum note pitches in the segment's time range.
             foreach (var track in this.projectTracks)
             {
                 foreach (var note in track.notes.EnumerateOverlappingRange(this.row.timeRange))
                 {
-                    if (note.pitch.MidiPitch < this.minPitch.MidiPitch)
-                        this.minPitch = note.pitch;
+                    var noteOctave = (int)(note.pitch.MidiPitch / 12);
 
-                    if (note.pitch.MidiPitch > this.maxPitch.MidiPitch)
-                        this.maxPitch = note.pitch;
+                    if (12 * noteOctave < this.minPitch.MidiPitch)
+                        this.minPitch.MidiPitch = 12 * noteOctave;
+
+                    if (12 * noteOctave + 11 > this.maxPitch.MidiPitch)
+                        this.maxPitch.MidiPitch = 12 * noteOctave + 11;
                 }
             }
+
+            var pitchRange = (this.maxPitch.MidiPitch - this.minPitch.MidiPitch + 1);
 
             this.layoutRect = new Util.Rect(
                 x,
                 y,
                 x + this.row.timeRange.Duration * this.manager.TimeToPixelsMultiplier,
-                y + (this.maxPitch.MidiPitch - this.minPitch.MidiPitch + 1) * this.manager.PitchedNoteHeight + 10);
+                y + LAYOUT_MARGIN * 2 + pitchRange * this.manager.PitchedNoteHeight);
 
-            this.notesRect = new Util.Rect(
+            this.contentRect = new Util.Rect(
                 x,
-                y,
+                y + LAYOUT_MARGIN,
                 x + this.row.timeRange.Duration * this.manager.TimeToPixelsMultiplier,
-                y + (this.maxPitch.MidiPitch - this.minPitch.MidiPitch + 1) * this.manager.PitchedNoteHeight);
+                y + LAYOUT_MARGIN + pitchRange * this.manager.PitchedNoteHeight);
         }
 
 
         public override float GetTimeAtPosition(float x)
         {
-            return this.row.timeRange.Start + (x - this.notesRect.xMin) / this.manager.TimeToPixelsMultiplier;
+            return this.row.timeRange.Start + (x - this.contentRect.xMin) / this.manager.TimeToPixelsMultiplier;
         }
 
 
@@ -64,7 +69,7 @@ namespace Composer.Editor
             return Util.Pitch.FromMidiPitch(
                 System.Math.Max(this.minPitch.MidiPitch,
                 System.Math.Min(this.maxPitch.MidiPitch,
-                    this.minPitch.MidiPitch + (this.notesRect.yMax - y) / this.manager.PitchedNoteHeight)));
+                    this.minPitch.MidiPitch + (this.contentRect.yMax - y) / this.manager.PitchedNoteHeight)));
         }
 
 
@@ -93,13 +98,13 @@ namespace Composer.Editor
                     if (n > this.row.timeRange.Start)
                     {
                         var nMinusRowStart = n - this.row.timeRange.Start;
-                        var x = (int)this.notesRect.xMin + nMinusRowStart * this.manager.TimeToPixelsMultiplier;
+                        var x = (int)this.contentRect.xMin + nMinusRowStart * this.manager.TimeToPixelsMultiplier;
 
                         g.DrawLine(beatCount == 0 ? Pens.Gray : Pens.LightGray,
                             x,
-                            (int)(this.notesRect.yMin),
+                            (int)(this.contentRect.yMin),
                             x,
-                            (int)(this.notesRect.yMax));
+                            (int)(this.contentRect.yMax));
                     }
 
                     beatCount = (beatCount + 1) % meterChange.meter.numerator;
@@ -122,11 +127,11 @@ namespace Composer.Editor
                         keyEndTime = this.row.trackSegmentKeyChanges.affectingKeyChanges[i + 1].time;
 
                     var keyStartX = (int)
-                        (this.notesRect.xMin + (keyStartTime - this.row.timeRange.Start) *
+                        (this.contentRect.xMin + (keyStartTime - this.row.timeRange.Start) *
                         this.manager.TimeToPixelsMultiplier);
 
                     var keyEndX = (int)
-                        (this.notesRect.xMin + (keyEndTime - this.row.timeRange.Start) *
+                        (this.contentRect.xMin + (keyEndTime - this.row.timeRange.Start) *
                         this.manager.TimeToPixelsMultiplier);
 
                     for (var p = this.minPitch.MidiPitch; p <= this.maxPitch.MidiPitch; p++)
@@ -139,7 +144,7 @@ namespace Composer.Editor
                             relativePitch == keyChange.key.tonicPitch;
 
                         var y = (int)
-                            (this.notesRect.yMax - (p - this.minPitch.MidiPitch) *
+                            (this.contentRect.yMax - (p - this.minPitch.MidiPitch) *
                             this.manager.PitchedNoteHeight);
 
                         g.DrawLine(isTonicPitch ? Pens.Gray : Pens.LightGray,
@@ -168,12 +173,12 @@ namespace Composer.Editor
 
             // Draw frame.
             g.DrawRectangle(Pens.Black,
-                (int)this.notesRect.xMin, (int)this.notesRect.yMin,
-                rowEndX - (int)this.notesRect.xMin, (int)this.notesRect.ySize);
+                (int)this.contentRect.xMin, (int)this.contentRect.yMin,
+                rowEndX - (int)this.contentRect.xMin, (int)this.contentRect.ySize);
 
             g.DrawLine(Pens.Black,
-                (int)this.notesRect.xMax - 1, (int)this.notesRect.yMin,
-                (int)this.notesRect.xMax - 1, (int)this.notesRect.yMax);
+                (int)this.contentRect.xMax - 1, (int)this.contentRect.yMin,
+                (int)this.contentRect.xMax - 1, (int)this.contentRect.yMax);
         }
     }
 }

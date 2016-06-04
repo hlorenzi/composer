@@ -14,6 +14,7 @@
         public float MidiPitch
         {
             get { return this.midiPitch; }
+            set { this.midiPitch = value; }
         }
 
 

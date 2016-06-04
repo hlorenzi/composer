@@ -18,6 +18,12 @@
         }
 
 
+        public static Util.Pitch GetPitch(this RelativePitch relativePitch, int octave)
+        {
+            return Util.Pitch.FromMidiPitch((int)relativePitch + 12 * octave);
+        }
+
+
         public static RelativePitch DisplaceBy(this RelativePitch relativePitch, RelativePitch otherPitch)
         {
             return (RelativePitch)(((int)relativePitch + 12 - (int)otherPitch) % 12);

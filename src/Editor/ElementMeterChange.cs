@@ -87,13 +87,13 @@ namespace Composer.Editor
                 3))
             {
                 g.DrawLine(pen,
-                    x, (int)this.row.trackSegmentMeterChanges.layoutRect.yMin,
-                    x, (int)this.row.layoutRect.yMax);
+                    x, (int)this.row.trackSegmentMeterChanges.contentRect.yMin,
+                    x, (int)this.row.contentRect.yMax);
 
                 g.FillRectangle(
                     selected ? Brushes.DarkCyan :
                     hovering ? Brushes.Aquamarine : Brushes.MediumAquamarine,
-                    x - HANDLE_WIDTH / 2, (int)this.row.trackSegmentMeterChanges.layoutRect.yMin,
+                    x - HANDLE_WIDTH / 2, (int)this.row.trackSegmentMeterChanges.contentRect.yMin,
                     HANDLE_WIDTH, HANDLE_HEIGHT);
             }
 
@@ -103,7 +103,7 @@ namespace Composer.Editor
                     this.projectMeterChange.GetDisplayString(),
                     font,
                     Brushes.MediumAquamarine,
-                    x + HANDLE_HEIGHT / 2, (int)this.row.trackSegmentMeterChanges.layoutRect.yMin);
+                    x + HANDLE_HEIGHT / 2, (int)this.row.trackSegmentMeterChanges.contentRect.yMin);
             }
         }
     }

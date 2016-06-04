@@ -41,10 +41,10 @@ namespace Composer.Editor
                 var timeMinusTrackStart = this.time - this.row.timeRange.Start;
 
                 var handleRect = new Util.Rect(
-                    track.layoutRect.xMin + tMult * timeMinusTrackStart - HANDLE_WIDTH / 2,
-                    track.layoutRect.yMin,
-                    track.layoutRect.xMin + tMult * timeMinusTrackStart + HANDLE_WIDTH / 2,
-                    track.layoutRect.yMax);
+                    track.contentRect.xMin + tMult * timeMinusTrackStart - HANDLE_WIDTH / 2,
+                    track.contentRect.yMin,
+                    track.contentRect.xMin + tMult * timeMinusTrackStart + HANDLE_WIDTH / 2,
+                    track.contentRect.yMax);
 
                 this.interactableRegions.Add(
                     new InteractableRegion(InteractableRegion.CursorKind.MoveHorizontal, handleRect));
@@ -87,13 +87,13 @@ namespace Composer.Editor
                 3))
             {
                 g.DrawLine(pen,
-                    x, (int)this.row.trackSegmentKeyChanges.layoutRect.yMin,
-                    x, (int)this.row.layoutRect.yMax);
+                    x, (int)this.row.trackSegmentKeyChanges.contentRect.yMin,
+                    x, (int)this.row.contentRect.yMax);
 
                 g.FillRectangle(
                     selected ? Brushes.DarkMagenta :
                     hovering ? Brushes.Violet : Brushes.MediumVioletRed,
-                    x - HANDLE_WIDTH / 2, (int)this.row.trackSegmentKeyChanges.layoutRect.yMin,
+                    x - HANDLE_WIDTH / 2, (int)this.row.trackSegmentKeyChanges.contentRect.yMin,
                     HANDLE_WIDTH, HANDLE_HEIGHT);
             }
 
@@ -103,7 +103,7 @@ namespace Composer.Editor
                     this.projectKeyChange.GetDisplayString(),
                     font,
                     Brushes.MediumVioletRed,
-                    x + HANDLE_HEIGHT / 2, (int)this.row.trackSegmentKeyChanges.layoutRect.yMin);
+                    x + HANDLE_HEIGHT / 2, (int)this.row.trackSegmentKeyChanges.contentRect.yMin);
             }
         }
     }
