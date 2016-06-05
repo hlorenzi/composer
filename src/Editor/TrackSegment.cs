@@ -18,7 +18,7 @@ namespace Composer.Editor
         }
 
 
-        public abstract void Rebuild(float x, float y);
+        public abstract void RefreshLayout(float x, float y);
 
         public abstract float GetTimeAtPosition(float x);
 

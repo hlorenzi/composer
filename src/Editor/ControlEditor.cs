@@ -32,13 +32,14 @@ namespace Composer.Editor
         public void Rebuild()
         {
             this.viewManager.Rebuild();
+            this.Refresh();
         }
 
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
             this.viewManager.OnMouseMove(e.X, e.Y);
-            base.OnMouseMove(e);
+            this.Refresh();
         }
 
 
@@ -48,14 +49,14 @@ namespace Composer.Editor
                 e.Button != MouseButtons.Left,
                 e.X, e.Y,
                 ModifierKeys == Keys.Control, ModifierKeys == Keys.Shift);
-            base.OnMouseDown(e);
+            this.Refresh();
         }
 
 
         protected override void OnMouseUp(MouseEventArgs e)
         {
             this.viewManager.OnMouseUp(e.X, e.Y);
-            base.OnMouseDown(e);
+            this.Refresh();
         }
 
 

@@ -18,7 +18,7 @@ namespace Composer.Editor
         }
 
 
-        public override void Rebuild(float x, float y)
+        public override void RefreshLayout(float x, float y)
         {
             this.affectingKeyChanges.Clear();
 

@@ -11,8 +11,8 @@ namespace Composer.Editor
         public Project.TrackPitchedNotes projectTrackPitchedNode;
         List<Segment> segments;
 
-        Util.TimeRange timeRangeDragStart;
-        Util.Pitch pitchDragStart;
+        Util.TimeRange timeRange;
+        Util.Pitch pitch;
 
 
         public ElementPitchedNote(
@@ -25,17 +25,10 @@ namespace Composer.Editor
             this.projectPitchedNote = pitchedNote;
             this.interactableRegions = new List<InteractableRegion>();
             this.segments = new List<Segment>();
-        }
 
+            this.timeRange = this.projectPitchedNote.timeRange;
+            this.pitch = this.projectPitchedNote.pitch;
 
-        class Segment
-        {
-            public Util.Rect noteRect;
-        }
-
-
-        public override void AssignTrack()
-        {
             this.assignedTrack = -1;
             for (var i = 0; i < this.manager.rows[0].trackSegments.Count; i++)
             {
@@ -50,7 +43,13 @@ namespace Composer.Editor
         }
 
 
-        public override void Rebuild()
+        class Segment
+        {
+            public Util.Rect noteRect;
+        }
+
+
+        public override void RefreshLayout()
         {
             this.segments.Clear();
             this.interactableRegions.Clear();
@@ -58,24 +57,24 @@ namespace Composer.Editor
             var tMult = this.manager.TimeToPixelsMultiplier;
             var pMult = this.manager.PitchedNoteHeight;
 
-            foreach (var row in this.manager.EnumerateRowsInTimeRange(this.projectPitchedNote.timeRange))
+            foreach (var row in this.manager.EnumerateRowsInTimeRange(this.timeRange))
             {
                 var trackPitchedNote = (TrackSegmentPitchedNotes)row.trackSegments[this.assignedTrack];
 
-                if (this.projectPitchedNote.pitch.MidiPitch < trackPitchedNote.minPitch.MidiPitch ||
-                    this.projectPitchedNote.pitch.MidiPitch > trackPitchedNote.maxPitch.MidiPitch)
+                if (this.pitch.MidiPitch < trackPitchedNote.minPitch.MidiPitch ||
+                    this.pitch.MidiPitch > trackPitchedNote.maxPitch.MidiPitch)
                     continue;
 
                 var midiPitchMinusTrackMin =
-                    this.projectPitchedNote.pitch.MidiPitch - trackPitchedNote.minPitch.MidiPitch;
+                    this.pitch.MidiPitch - trackPitchedNote.minPitch.MidiPitch;
 
                 var startTimeMinusTrackStart = System.Math.Max(
                     0,
-                    this.projectPitchedNote.timeRange.Start - trackPitchedNote.row.timeRange.Start);
+                    this.timeRange.Start - trackPitchedNote.row.timeRange.Start);
 
                 var endTimeMinusTrackStart = System.Math.Min(
                     trackPitchedNote.row.timeRange.End,
-                    this.projectPitchedNote.timeRange.End) - trackPitchedNote.row.timeRange.Start;
+                    this.timeRange.End) - trackPitchedNote.row.timeRange.Start;
 
                 var noteRect = new Util.Rect(
                     trackPitchedNote.contentRect.xMin + tMult * startTimeMinusTrackStart,
@@ -91,64 +90,76 @@ namespace Composer.Editor
         }
 
 
-        public override void DragStart()
+        public override void BeginModify()
         {
-            this.timeRangeDragStart = this.projectPitchedNote.timeRange;
-            this.pitchDragStart = this.projectPitchedNote.pitch;
+            this.manager.project.RemovePitchedNote(
+                this.manager.project.GetTrackIndex(this.projectTrackPitchedNode),
+                this.projectPitchedNote);
+        }
+
+
+        public override void EndModify()
+        {
+            this.projectPitchedNote.timeRange = this.timeRange;
+            this.projectPitchedNote.pitch = this.pitch;
+
+            this.manager.project.InsertPitchedNote(
+                this.manager.project.GetTrackIndex(this.projectTrackPitchedNode),
+                this.projectPitchedNote);
         }
 
 
         public override void Drag()
         {
-            this.projectPitchedNote.timeRange =
-                this.timeRangeDragStart.OffsetBy(this.manager.DragTimeOffsetClampedToRow);
+            this.timeRange =
+                this.projectPitchedNote.timeRange.OffsetBy(this.manager.DragTimeOffsetClampedToRow);
 
-            this.projectPitchedNote.pitch =
-                this.pitchDragStart.OffsetMidiPitchBy(this.manager.DragMidiPitchOffset);
+            this.pitch =
+                this.projectPitchedNote.pitch.OffsetMidiPitchBy(this.manager.DragMidiPitchOffset);
         }
 
 
         public override void OnPressUp(bool ctrlKey, bool shiftKey)
         {
-            this.projectPitchedNote.pitch =
-                this.projectPitchedNote.pitch.OffsetMidiPitchBy(shiftKey ? 12 : 1);
+            this.pitch =
+                this.pitch.OffsetMidiPitchBy(shiftKey ? 12 : 1);
         }
 
 
         public override void OnPressDown(bool ctrlKey, bool shiftKey)
         {
-            this.projectPitchedNote.pitch =
-                this.projectPitchedNote.pitch.OffsetMidiPitchBy(shiftKey ? -12 : -1);
+            this.pitch =
+                this.pitch.OffsetMidiPitchBy(shiftKey ? -12 : -1);
         }
 
 
         public override void OnPressRight(bool ctrlKey, bool shiftKey)
         {
-            if (this.manager.noteInsertionMode || shiftKey)
+            if (shiftKey)
             {
-                this.projectPitchedNote.timeRange.Duration =
+                this.timeRange.Duration =
                     System.Math.Max(
                         this.manager.TimeSnap,
-                        this.projectPitchedNote.timeRange.Duration + this.manager.TimeSnap);
+                        this.timeRange.Duration + this.manager.TimeSnap);
             }
             else
-                this.projectPitchedNote.timeRange =
-                    this.projectPitchedNote.timeRange.OffsetBy(this.manager.TimeSnap);
+                this.timeRange =
+                    this.timeRange.OffsetBy(this.manager.TimeSnap);
         }
 
 
         public override void OnPressLeft(bool ctrlKey, bool shiftKey)
         {
-            if (this.manager.noteInsertionMode || shiftKey)
+            if (shiftKey)
             {
-                this.projectPitchedNote.timeRange.Duration =
+                this.timeRange.Duration =
                     System.Math.Max(
                         this.manager.TimeSnap,
-                        this.projectPitchedNote.timeRange.Duration - this.manager.TimeSnap);
+                        this.timeRange.Duration - this.manager.TimeSnap);
             }
             else
-                this.projectPitchedNote.timeRange =
-                    this.projectPitchedNote.timeRange.OffsetBy(-this.manager.TimeSnap);
+                this.timeRange =
+                    this.timeRange.OffsetBy(-this.manager.TimeSnap);
         }
 
 

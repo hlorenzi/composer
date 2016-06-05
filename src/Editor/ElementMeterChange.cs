@@ -10,8 +10,6 @@ namespace Composer.Editor
 
         Row row;
         float time;
-        float timeDragStart;
-
 
         public const int HANDLE_WIDTH = 10;
         public const int HANDLE_HEIGHT = 16;
@@ -28,7 +26,7 @@ namespace Composer.Editor
         }
 
 
-        public override void Rebuild()
+        public override void RefreshLayout()
         {
             this.interactableRegions.Clear();
 
@@ -52,9 +50,17 @@ namespace Composer.Editor
         }
 
 
-        public override void DragStart()
+        public override void BeginModify()
         {
-            this.timeDragStart = this.projectMeterChange.time;
+            this.manager.project.RemoveMeterChange(this.projectMeterChange);
+        }
+
+
+        public override void EndModify()
+        {
+            this.projectMeterChange.time = this.time;
+
+            this.manager.project.InsertMeterChange(this.projectMeterChange);
         }
 
 
@@ -63,13 +69,7 @@ namespace Composer.Editor
             this.time =
                 System.Math.Max(0,
                 System.Math.Min(this.manager.project.Length,
-                this.timeDragStart + this.manager.DragTimeOffsetClampedToRow));
-        }
-
-
-        public override void DragEnd()
-        {
-            this.manager.project.MoveMeterChange(this.projectMeterChange, this.time);
+                this.projectMeterChange.time + this.manager.DragTimeOffsetClampedToRow));
         }
 
 

@@ -18,13 +18,19 @@ namespace Composer.Editor
         }
 
 
-        public virtual void AssignTrack()
+        public virtual void RefreshLayout()
         {
 
         }
 
 
-        public virtual void Rebuild()
+        public virtual void BeginModify()
+        {
+
+        }
+
+
+        public virtual void EndModify()
         {
 
         }
@@ -54,19 +60,7 @@ namespace Composer.Editor
         }
 
 
-        public virtual void DragStart()
-        {
-
-        }
-
-
         public virtual void Drag()
-        {
-
-        }
-
-
-        public virtual void DragEnd()
         {
 
         }

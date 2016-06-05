@@ -39,9 +39,9 @@ namespace Composer.Editor
         }
 
 
-        public void Rebuild(float x, float y)
+        public void RefreshLayout(float x, float y)
         {
-            this.resizeEndTime = timeRange.End;
+            this.resizeEndTime = this.timeRange.End;
 
             this.layoutRect = new Util.Rect(
                 x, y,
@@ -53,7 +53,7 @@ namespace Composer.Editor
 
             foreach (var track in this.trackSegments)
             {
-                track.Rebuild(x, this.layoutRect.yMax);
+                track.RefreshLayout(x, this.layoutRect.yMax);
                 this.layoutRect = this.layoutRect.Include(track.layoutRect);
                 this.contentRect = this.contentRect.Include(track.contentRect);
             }

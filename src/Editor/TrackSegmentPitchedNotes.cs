@@ -22,7 +22,7 @@ namespace Composer.Editor
         }
 
 
-        public override void Rebuild(float x, float y)
+        public override void RefreshLayout(float x, float y)
         {
             this.minPitch = Util.Pitch.FromMidiPitch(60);
             this.maxPitch = Util.Pitch.FromMidiPitch(71);

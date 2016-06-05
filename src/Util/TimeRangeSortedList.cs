@@ -88,9 +88,12 @@ namespace Composer.Util
         }
 
 
-        public void RemoveOverlappingRange(Util.TimeRange timeRange)
+        public void RemoveOverlappingRange(Util.TimeRange timeRange, System.Predicate<T> matching = null)
         {
-            internalList.RemoveAll(item => this.getTimeRangeFunc(item).OverlapsRange(timeRange));
+            internalList.RemoveAll(item =>
+                this.getTimeRangeFunc(item).OverlapsRange(timeRange) &&
+                (matching == null || matching(item))
+            );
         }
 
 

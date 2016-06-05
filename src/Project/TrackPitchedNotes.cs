@@ -17,7 +17,14 @@ namespace Composer.Project
 
         public void InsertPitchedNote(PitchedNote pitchedNote)
         {
+            this.EraseRange(pitchedNote.timeRange, pitchedNote.pitch);
             this.notes.Add(pitchedNote);
+        }
+
+
+        public void RemovePitchedNote(PitchedNote pitchedNote)
+        {
+            this.notes.Remove(pitchedNote);
         }
 
 
@@ -36,6 +43,16 @@ namespace Composer.Project
             this.notes.RemoveOverlappingRange(timeRange);
             foreach (var note in this.notes.EnumerateEntirelyAfter(timeRange.End))
                 note.timeRange = note.timeRange.OffsetBy(-timeRange.Duration);
+        }
+
+
+        public void EraseRange(Util.TimeRange timeRange, Util.Pitch? onlyAtPitch = null)
+        {
+            this.SplitNotesAt(timeRange.Start, onlyAtPitch);
+            this.SplitNotesAt(timeRange.End, onlyAtPitch);
+
+            this.notes.RemoveOverlappingRange(timeRange,
+                (note) => !onlyAtPitch.HasValue || note.pitch.MidiPitch == onlyAtPitch.Value.MidiPitch);
         }
 
 

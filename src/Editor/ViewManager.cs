@@ -129,6 +129,20 @@ namespace Composer.Editor
 
         public void Rebuild()
         {
+            var previouslySelectedPitchedNotes = new HashSet<Project.PitchedNote>();
+            var previouslySelectedKeyChanges = new HashSet<Project.KeyChange>();
+            var previouslySelectedMeterChanges = new HashSet<Project.MeterChange>();
+
+            foreach (var element in this.elements)
+            {
+                if (element.selected)
+                {
+                    var elementPitchedNote = element as ElementPitchedNote;
+                    if (elementPitchedNote != null)
+                        previouslySelectedPitchedNotes.Add(elementPitchedNote.projectPitchedNote);
+                }
+            }
+
             this.rows.Clear();
             this.elements.Clear();
 
@@ -183,20 +197,18 @@ namespace Composer.Editor
                 if (trackPitchedNotes != null)
                 {
                     foreach (var note in trackPitchedNotes.notes)
-                        this.elements.Add(new ElementPitchedNote(this, trackPitchedNotes, note));
+                    {
+                        var element = new ElementPitchedNote(this, trackPitchedNotes, note);
+                        element.selected = previouslySelectedPitchedNotes.Contains(note);
+                        this.elements.Add(element);
+                    }
                 }
             }
 
-            foreach (var element in this.elements)
-            {
-                element.AssignTrack();
-            }
-
-            this.cursorVisible = false;
             this.SetCursorTimeRange(this.cursorTime1, this.cursorTime2);
             this.SetCursorTrackIndices(this.cursorTrack1, this.cursorTrack2);
 
-            Refresh();
+            this.Refresh();
             this.ScrollTo(this.scrollX, this.scrollY);
         }
 
@@ -208,16 +220,14 @@ namespace Composer.Editor
             var y = TopMargin;
             foreach (var row in this.rows)
             {
-                row.Rebuild(LeftMargin, y);
+                row.RefreshLayout(LeftMargin, y);
                 y = row.layoutRect.yMax;
 
                 this.layoutRect = this.layoutRect.Include(row.layoutRect);
             }
 
             foreach (var element in this.elements)
-            {
-                element.Rebuild();
-            }
+                element.RefreshLayout();
         }
 
 
@@ -259,82 +269,68 @@ namespace Composer.Editor
 
         public void OnPressUp(bool ctrlKey, bool shiftKey)
         {
-            foreach (var element in this.elements)
-            {
-                if (element.selected)
-                {
-                    element.OnPressUp(ctrlKey, shiftKey);
-                    element.Rebuild();
-                }
-            }
-
-            this.Refresh();
-            this.control.Refresh();
+            if (this.ModifySelected((elem) => elem.OnPressUp(ctrlKey, shiftKey)))
+                this.Rebuild();
         }
 
 
         public void OnPressDown(bool ctrlKey, bool shiftKey)
         {
-            foreach (var element in this.elements)
-            {
-                if (element.selected)
-                {
-                    element.OnPressDown(ctrlKey, shiftKey);
-                    element.Rebuild();
-                }
-            }
-
-            this.Refresh();
-            this.control.Refresh();
+            if (this.ModifySelected((elem) => elem.OnPressDown(ctrlKey, shiftKey)))
+                this.Rebuild();
         }
 
 
         public void OnPressRight(bool ctrlKey, bool shiftKey)
         {
-            var anySelected = false;
-            foreach (var element in this.elements)
-            {
-                if (element.selected)
-                {
-                    anySelected = true;
-                    element.OnPressRight(ctrlKey, shiftKey);
-                    element.Rebuild();
-                }
-            }
-
-            if (!anySelected)
+            if (this.ModifySelected((elem) => elem.OnPressRight(ctrlKey, shiftKey)))
+                this.Rebuild();
+            else
             {
                 this.SetCursorTimeRange(this.cursorTime1 + this.TimeSnap, this.cursorTime2 + this.TimeSnap);
                 this.SetCursorVisible(true);
             }
-
-            this.Refresh();
-            this.control.Refresh();
         }
 
 
         public void OnPressLeft(bool ctrlKey, bool shiftKey)
+        {
+            if (this.ModifySelected((elem) => elem.OnPressLeft(ctrlKey, shiftKey)))
+                this.Rebuild();
+            else
+            {
+                this.SetCursorTimeRange(this.cursorTime1 - this.TimeSnap, this.cursorTime2 - this.TimeSnap);
+                this.SetCursorVisible(true);
+            }
+        }
+
+
+        public bool ModifySelected(System.Action<Element> func)
         {
             var anySelected = false;
 
             foreach (var element in this.elements)
             {
                 if (element.selected)
+                    element.BeginModify();
+            }
+
+            foreach (var element in this.elements)
+            {
+                if (element.selected)
                 {
                     anySelected = true;
-                    element.OnPressLeft(ctrlKey, shiftKey);
-                    element.Rebuild();
+                    func(element);
                 }
             }
 
-            if (!anySelected)
+            foreach (var element in this.elements)
             {
-                this.SetCursorTimeRange(this.cursorTime1 - this.TimeSnap, this.cursorTime2 - this.TimeSnap);
-                this.SetCursorVisible(true);
+                if (element.selected)
+                    element.EndModify();
             }
 
-            this.Refresh();
-            this.control.Refresh();
+            return anySelected;
         }
 
 
@@ -356,7 +352,7 @@ namespace Composer.Editor
                             if (element.selected)
                             {
                                 element.Drag();
-                                element.Rebuild();
+                                element.RefreshLayout();
                             }
                         }
                     }
@@ -381,8 +377,6 @@ namespace Composer.Editor
                     this.SetCursorTimeRange(this.cursorTime1, timeSnapped);
                     this.SetCursorTrackIndices(this.cursorTrack1, track);
                 }
-
-                this.control.Refresh();
             }
             else
             {
@@ -431,9 +425,6 @@ namespace Composer.Editor
                 }
                 else
                     this.control.Cursor = System.Windows.Forms.Cursors.Default;
-
-                if (this.currentHoverRegion != lastHoverRegion)
-                    this.control.Refresh();
             }
         }
 
@@ -483,16 +474,6 @@ namespace Composer.Editor
                     this.SetCursorTrackIndices(this.trackDragOrigin, this.trackDragOrigin);
                     this.cursorVisible = true;
                 }
-                else
-                {
-                    foreach (var element in this.elements)
-                    {
-                        if (element.selected)
-                            element.DragStart();
-                    }
-                }
-
-                this.control.Refresh();
             }
         }
 
@@ -514,16 +495,10 @@ namespace Composer.Editor
                 }
                 else
                 {
-                    foreach (var element in this.elements)
-                    {
-                        if (element.selected)
-                            element.DragEnd();
-                    }
-
-                    this.Refresh();
+                    this.ModifySelected((elem) => { });
                 }
 
-                this.control.Refresh();
+                this.Rebuild();
             }
         }
 

@@ -72,32 +72,44 @@ namespace Composer.Project
 
         public void InsertPitchedNote(int trackIndex, PitchedNote pitchedNote)
         {
+            pitchedNote.timeRange.Start = System.Math.Max(
+                0,
+                pitchedNote.timeRange.Start);
+
+            pitchedNote.timeRange.End = System.Math.Min(
+                this.length,
+                pitchedNote.timeRange.End);
+
+            if (pitchedNote.timeRange.Duration <= 0)
+                return;
+
             var track = (TrackPitchedNotes)this.tracks[trackIndex];
             track.InsertPitchedNote(pitchedNote);
         }
 
 
-        public void MoveSectionBreak(SectionBreak sectionBreak, float newTime)
+        public void RemovePitchedNote(int trackIndex, PitchedNote pitchedNote)
+        {
+            var track = (TrackPitchedNotes)this.tracks[trackIndex];
+            track.RemovePitchedNote(pitchedNote);
+        }
+
+
+        public void RemoveSectionBreak(SectionBreak sectionBreak)
         {
             this.sectionBreaks.Remove(sectionBreak);
-            sectionBreak.time = newTime;
-            this.InsertSectionBreak(sectionBreak);
         }
 
 
-        public void MoveKeyChange(KeyChange keyChange, float newTime)
+        public void RemoveKeyChange(KeyChange keyChange)
         {
             this.keyChanges.Remove(keyChange);
-            keyChange.time = newTime;
-            this.InsertKeyChange(keyChange);
         }
 
 
-        public void MoveMeterChange(MeterChange meterChange, float newTime)
+        public void RemoveMeterChange(MeterChange meterChange)
         {
             this.meterChanges.Remove(meterChange);
-            meterChange.time = newTime;
-            this.InsertMeterChange(meterChange);
         }
 
 
@@ -111,19 +123,31 @@ namespace Composer.Project
             foreach (var sectionBreak in this.sectionBreaks.Clone())
             {
                 if (sectionBreak.time >= startTime)
-                    this.MoveSectionBreak(sectionBreak, sectionBreak.time + duration);
+                {
+                    this.RemoveSectionBreak(sectionBreak);
+                    sectionBreak.time += duration;
+                    this.InsertSectionBreak(sectionBreak);
+                }
             }
 
             foreach (var keyChange in this.keyChanges.Clone())
             {
                 if (keyChange.time >= startTime)
-                    this.MoveKeyChange(keyChange, keyChange.time + duration);
+                {
+                    this.RemoveKeyChange(keyChange);
+                    keyChange.time += duration;
+                    this.InsertKeyChange(keyChange);
+                }
             }
 
             foreach (var meterChange in this.meterChanges.Clone())
             {
                 if (meterChange.time >= startTime)
-                    this.MoveMeterChange(meterChange, meterChange.time + duration);
+                {
+                    this.RemoveMeterChange(meterChange);
+                    meterChange.time += duration;
+                    this.InsertMeterChange(meterChange);
+                }
             }
 
             foreach (var track in this.tracks)
@@ -140,21 +164,33 @@ namespace Composer.Project
             foreach (var sectionBreak in this.sectionBreaks.Clone())
             {
                 if (sectionBreak.time >= timeRange.Start)
-                    this.MoveSectionBreak(sectionBreak, sectionBreak.time - timeRange.Duration);
+                {
+                    this.RemoveSectionBreak(sectionBreak);
+                    sectionBreak.time -= timeRange.Duration;
+                    this.InsertSectionBreak(sectionBreak);
+                }
             }
 
             this.keyChanges.RemoveAll(kc => timeRange.Overlaps(kc.time));
             foreach (var keyChange in this.keyChanges.Clone())
             {
                 if (keyChange.time >= timeRange.Start)
-                    this.MoveKeyChange(keyChange, keyChange.time - timeRange.Duration);
+                {
+                    this.RemoveKeyChange(keyChange);
+                    keyChange.time -= timeRange.Duration;
+                    this.InsertKeyChange(keyChange);
+                }
             }
 
             this.meterChanges.RemoveAll(mc => timeRange.Overlaps(mc.time));
             foreach (var meterChange in this.meterChanges.Clone())
             {
                 if (meterChange.time >= timeRange.Start)
-                    this.MoveMeterChange(meterChange, meterChange.time - timeRange.Duration);
+                {
+                    this.RemoveMeterChange(meterChange);
+                    meterChange.time -= timeRange.Duration;
+                    this.InsertMeterChange(meterChange);
+                }
             }
 
             this.length -= timeRange.Duration;

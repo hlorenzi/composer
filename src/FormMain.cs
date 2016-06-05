@@ -95,17 +95,26 @@ namespace Composer
                 return true;
             }
 
-            else if (keyData == Keys.Up) { this.editor.OnPressUp(ctrlKey, shiftKey); return true; }
-            else if (keyData == Keys.Down) { this.editor.OnPressDown(ctrlKey, shiftKey); return true; }
+            else if (keyData == Keys.Up)
+            {
+                this.editor.OnPressUp(ctrlKey, shiftKey);
+                this.editorControl.Refresh();
+                return true;
+            }
+            else if (keyData == Keys.Down)
+            {
+                this.editor.OnPressDown(ctrlKey, shiftKey);
+                this.editorControl.Refresh();
+                return true;
+            }
             else if (keyData == Keys.Right)
             {
                 this.editor.OnPressRight(ctrlKey, shiftKey);
                 var currentNote = this.editor.GetNoteInsertionModeNote();
                 if (currentNote != null)
-                {
                     this.editor.SetCursorTimeRange(currentNote.timeRange.End, currentNote.timeRange.End);
-                    this.editorControl.Refresh();
-                }
+
+                this.editorControl.Refresh();
                 return true;
             }
             else if (keyData == Keys.Left)
@@ -113,16 +122,20 @@ namespace Composer
                 this.editor.OnPressLeft(ctrlKey, shiftKey);
                 var currentNote = this.editor.GetNoteInsertionModeNote();
                 if (currentNote != null)
-                {
                     this.editor.SetCursorTimeRange(currentNote.timeRange.End, currentNote.timeRange.End);
-                    this.editorControl.Refresh();
-                }
+                
+                this.editorControl.Refresh();
                 return true;
             }
-
             else if (keyData == Keys.Return)
             {
                 this.editor.UnselectAll();
+                this.editorControl.Refresh();
+                return true;
+            }
+            else if (keyData == Keys.F5)
+            {
+                this.editor.Rebuild();
                 this.editorControl.Refresh();
                 return true;
             }
@@ -149,7 +162,7 @@ namespace Composer
             this.editor.SetCursorTimeRange(time + duration, time + duration);
             this.editor.SetCursorVisible(true);
 
-            this.Refresh();
+            this.editorControl.Refresh();
         }
     }
 }
