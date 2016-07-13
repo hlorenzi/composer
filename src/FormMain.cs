@@ -1,5 +1,6 @@
 ﻿using System.Windows.Forms;
-
+using System.Collections.Generic;
+using System;
 
 namespace Composer
 {
@@ -8,6 +9,8 @@ namespace Composer
         public Project.Project currentProject;
         public Editor.ControlEditor editorControl;
         public Editor.ViewManager editor;
+
+        public List<System.Threading.Thread> audioThreads = new List<System.Threading.Thread>();
 
 
         public FormMain(Project.Project project)
@@ -53,6 +56,80 @@ namespace Composer
             split.SplitterDistance = 200;
             editor.Rebuild();
             Refresh();
+
+        }
+
+
+        protected override void OnClosed(EventArgs e)
+        {
+            lock (this.audioThreads)
+            {
+                foreach (var thread in this.audioThreads)
+                    thread.Abort();
+
+                this.audioThreads.Clear();
+            }
+        }
+
+
+        private void RunAudioThread(object jobObj)
+        {
+            var job = (AudioOut.Job)jobObj;
+
+            using (var audioOut = new NAudio.Wave.WaveOut())
+            {
+                var audioBuffer = new NAudio.Wave.BufferedWaveProvider(new NAudio.Wave.WaveFormat());
+
+                audioOut.DesiredLatency = 100;
+                audioOut.Init(audioBuffer);
+                audioOut.Play();
+
+                var bufferSize = 5000;
+                var sampleBuffer = new float[bufferSize];
+                var byteBuffer = new byte[bufferSize * 4];
+                while (true)
+                {
+                    while (audioBuffer.BufferedBytes < bufferSize * 2)
+                    {
+                        for (var i = 0; i < sampleBuffer.Length; i++)
+                            sampleBuffer[i] = 0;
+
+                        var sampleNum = job.GetNextSamples(sampleBuffer);
+                        if (sampleNum == 0)
+                            goto end;
+
+                        for (var i = 0; i < sampleNum; i++)
+                        {
+                            var sampleU = unchecked((ushort)(short)(sampleBuffer[i] * 0x4000));
+
+                            byteBuffer[i * 4 + 0] = (byte)((sampleU >> 0) & 0xff);
+                            byteBuffer[i * 4 + 1] = (byte)((sampleU >> 8) & 0xff);
+                            byteBuffer[i * 4 + 2] = (byte)((sampleU >> 0) & 0xff);
+                            byteBuffer[i * 4 + 3] = (byte)((sampleU >> 8) & 0xff);
+                        }
+
+                        audioBuffer.AddSamples(byteBuffer, 0, sampleNum * 4);
+                    }
+
+                    System.Threading.Thread.Sleep(50);
+                }
+
+            end:
+                audioOut.Stop();
+            }
+
+            lock (audioThreads)
+                audioThreads.Remove(System.Threading.Thread.CurrentThread);
+        }
+
+
+        public void ExecuteAudioJob(AudioOut.Job job)
+        {
+            var newThread = new System.Threading.Thread(RunAudioThread);
+            newThread.Start(job);
+
+            lock (this.audioThreads)
+                this.audioThreads.Add(newThread);
         }
 
 
@@ -163,6 +240,8 @@ namespace Composer
             this.editor.SetCursorVisible(true);
 
             this.editorControl.Refresh();
+
+            this.ExecuteAudioJob(new AudioOut.JobNotePreview(pitch.Frequency));
         }
     }
 }
